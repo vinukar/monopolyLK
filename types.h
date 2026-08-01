@@ -63,6 +63,6 @@ typedef struct
 
 void boardInit(BoardSquare *board);
 
-void movePlayer(Player *player);
+void movePlayer(Player *player, BoardSquare *board);
 
 #endif
