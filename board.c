@@ -100,6 +100,12 @@ void boardInit(BoardSquare *board)
 void movePlayer(Player *player, BoardSquare *board)
 {
     Dice d = rollDice();
+    printf("%s rolled %d.\n", player->name, d.total);
+    printf("%s moves from Square %d to Square %d\n", player->name, player->position, (player->position + d.total)%BOARD_SIZE);
+    if (player->position + d.total >= BOARD_SIZE)
+    {
+        printf("%s passed GO.\nCollected LKR 2,000\nCurrent Balance : LKR %d\n", player->name, player->cash += 2000);
+    }
     player->position = (player->position + d.total) % BOARD_SIZE;
-    printf("%s rolled %d and moved to position %d(%s)\n", player->name, d.total, player->position, board[player->position].name);
+    printf("Landed on %s.\n\n", board[player->position].name);
 }

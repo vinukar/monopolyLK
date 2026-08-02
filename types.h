@@ -32,6 +32,12 @@ typedef struct
 
 Dice rollDice();
 
+typedef struct
+{
+    int currentRound;
+    int incomeTaxRate;
+} GameState;
+
 
 //players.c
 void playerInit(Player *players);

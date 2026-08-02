@@ -12,3 +12,8 @@ Dice rollDice()
 
     return Diceroll;
 }
+
+int percentageCalc(int amount, int rate)
+{
+    return (amount * rate) / 100;
+}

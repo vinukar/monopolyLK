@@ -6,6 +6,15 @@ void playerInit(Player *players)
 {
     const char *PlayerNames[NO_PLAYERS] = {"Aggressive Investor", "Conservative Banker", "Risk Taker", "Opportunistic Trader"};
 
+    printf("MONOPOLY-LK Simulation\n\n");
+
+    printf("Player 1 : %s\n", PlayerNames[0]);
+    printf("Player 2 : %s\n", PlayerNames[1]);
+    printf("Player 3 : %s\n", PlayerNames[2]);
+    printf("Player 4 : %s\n", PlayerNames[3]);
+
+    printf("\nEach player bigins with LKR 30,000\n\n");
+
     for (int i = 0; i < NO_PLAYERS; i++)
     {
         players[i].name = PlayerNames[i];
@@ -13,7 +22,7 @@ void playerInit(Player *players)
         players[i].position = 0;
 
         players[i].roll = rollDice().total;
-        printf("%s rolled %d\n", players[i].name, players[i].roll);
+        printf("%s rolles %d\n", players[i].name, players[i].roll);
     }
 
     // reroll the tied players
@@ -30,7 +39,7 @@ void playerInit(Player *players)
                     tied = 1;
                     players[i].roll = rollDice().total;
                     players[j].roll = rollDice().total;
-                    printf("Tie between %s and %s.\nReroll: %s -> %d, %s -> %d\n", players[i].name, players[j].name, players[i].name, players[i].roll, players[j].name, players[j].roll);
+                    printf("Tie between %s and %s.\nReroll: %s -> %d, %s -> %d\n\n", players[i].name, players[j].name, players[i].name, players[i].roll, players[j].name, players[j].roll);
                 }
             }
         }
@@ -52,11 +61,12 @@ void playerInit(Player *players)
             players[max_idx] = tmp;
         }
     }
+    printf("\n%s will begin the game.\n", players[0].name);
 
-    printf("\nPlayer order:\n");
+    printf("\nTurn order:\n");
     for (int i = 0; i < NO_PLAYERS; i++)
     {
-        printf("%d: %s\n", i + 1, players[i].name);
+        printf("%s\n", players[i].name);
         players[i].order = i + 1;
     }
     printf("\n\n");
