@@ -108,21 +108,21 @@ void movePlayer(Player *player, BoardSquare board[], GameState *gameState)
     }
     player->position = (player->position + d.total) % BOARD_SIZE;
     printf("Landed on %s.\n\n", board[player->position].name);
-    resolveLanding(player, board, gameState);
+    resolveLanding(player, board, gameState, d);
 }
 
-void resolveLanding(Player *players, BoardSquare board[], GameState *gameState)
+void resolveLanding(Player *players, BoardSquare board[], GameState *gameState , Dice d)
 {
     BoardSquare *currentSquare = &board[players->position];
 
     switch (currentSquare->type)
     {
     case PROPERTY:
-        /* Handle buying or rent */
+        
         break;
 
     case GO_TO_JAIL:
-        /* Implement later */
+        
         break;
 
     case TAX:
@@ -132,6 +132,30 @@ void resolveLanding(Player *players, BoardSquare board[], GameState *gameState)
     case FREE_PARKING:
         printf("%s rests at Free Parking.\n", players->name);
 
+    case UTILITY:
+        if (currentSquare->owner == -1)
+        {
+            printf("%s is unowned. Current purchase price : LKR %d\n", currentSquare->name, currentSquare->price);
+            //utilitybuy function
+        }
+        else if (currentSquare->owner != players->order)
+        {
+            if (&board[12].owner == &board[28].owner)
+            {
+                players->cash -= 4 * d.total;
+                players[currentSquare->owner].cash += 4 * d.total;
+                printf("%s pays double rent of %d to %s for landing on %s.\n", players->name, 4 * d.total, board[currentSquare->owner].name, currentSquare->name);
+            }
+            else
+            {
+                players->cash -= 4 * d.total;
+                players[currentSquare->owner].cash += 4 * d.total;
+                printf("%s pays rent to %s for landing on %s.\n", players->name, board[currentSquare->owner].name, currentSquare->name);
+            }
+        }else
+        {
+            printf("%s owns this property. No Action\n", players->name);
+        }
     default:
         break;
     }

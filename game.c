@@ -13,7 +13,8 @@ Dice rollDice()
     return Diceroll;
 }
 
-void gameStateInit(GameState *gameState){
+void gameStateInit(GameState *gameState)
+{
     gameState->currentRound = 0;
     gameState->incomeTaxRate = 15;
 }
@@ -21,4 +22,19 @@ void gameStateInit(GameState *gameState){
 int percentageCalc(int amount, int rate)
 {
     return (amount * rate) / 100;
+}
+void runGame(GameState *gameState, BoardSquare *board)
+{
+    Player players[NO_PLAYERS];
+    playerInit(players);
+
+    for (int i = 0; i < 50; i++)
+    {
+        printf("Round %d\n", gameState->currentRound + 1);
+        movePlayer(&players[0], board, gameState);
+        movePlayer(&players[1], board, gameState);
+        movePlayer(&players[2], board, gameState);
+        movePlayer(&players[3], board, gameState);
+        gameState->currentRound++;
+    }
 }

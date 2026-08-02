@@ -14,7 +14,8 @@
 #define EVENT_DECK_SIZE 20
 #define PROPERTY_GROUPS 8
 
-typedef struct {
+typedef struct
+{
     const char *name;
     int roll;
     int cash;
@@ -22,7 +23,6 @@ typedef struct {
     int order;
 } Player;
 
-//game.c
 typedef struct
 {
     int dice1;
@@ -30,21 +30,11 @@ typedef struct
     int total;
 } Dice;
 
-
 typedef struct
 {
     int currentRound;
     int incomeTaxRate;
 } GameState;
-
-Dice rollDice();
-void gameStateInit(GameState *gameState);
-int percentageCalc(int amount, int rate);
-
-//players.c
-void playerInit(Player *players);
-
-//board.c
 
 typedef enum
 {
@@ -67,10 +57,24 @@ typedef struct
     const char *name;
     SquareType type;
     int owner;
+    int price;
 } BoardSquare;
+
+// game.c
+
+Dice rollDice();
+void gameStateInit(GameState *gameState);
+int percentageCalc(int amount, int rate);
+void runGame(GameState *gameState, BoardSquare *board);
+
+// players.c
+
+void playerInit(Player *players);
+
+// board.c
 
 void boardInit(BoardSquare *board);
 void movePlayer(Player *player, BoardSquare board[], GameState *gameState);
-void resolveLanding(Player *players, BoardSquare board[], GameState *gameState);
+void resolveLanding(Player *players, BoardSquare board[], GameState *gameState, Dice d);
 
 #endif
