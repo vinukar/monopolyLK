@@ -30,7 +30,6 @@ typedef struct
     int total;
 } Dice;
 
-Dice rollDice();
 
 typedef struct
 {
@@ -38,6 +37,9 @@ typedef struct
     int incomeTaxRate;
 } GameState;
 
+Dice rollDice();
+void gameStateInit(GameState *gameState);
+int percentageCalc(int amount, int rate);
 
 //players.c
 void playerInit(Player *players);
@@ -68,7 +70,7 @@ typedef struct
 } BoardSquare;
 
 void boardInit(BoardSquare *board);
-
-void movePlayer(Player *player, BoardSquare *board);
+void movePlayer(Player *player, BoardSquare board[], GameState *gameState);
+void resolveLanding(Player *players, BoardSquare board[], GameState *gameState);
 
 #endif

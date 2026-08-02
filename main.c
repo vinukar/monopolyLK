@@ -11,13 +11,17 @@ int main()
 
     BoardSquare board[BOARD_SIZE];
     boardInit(board);
+
+    GameState gameState;
+    gameStateInit(&gameState);
+
     for (int i = 0; i < 50; i++)
     {
         printf("Round %d\n", i + 1);
-        movePlayer(&players[0], board);
-        movePlayer(&players[1], board);
-        movePlayer(&players[2], board);
-        movePlayer(&players[3], board);
+        movePlayer(&players[0], board , &gameState);
+        //movePlayer(&players[1], board , &gameState);
+        //movePlayer(&players[2], board , &gameState);
+        //movePlayer(&players[3], board , &gameState);
     }
     return 0;
 }

@@ -97,15 +97,42 @@ void boardInit(BoardSquare *board)
     }
 }
 
-void movePlayer(Player *player, BoardSquare *board)
+void movePlayer(Player *player, BoardSquare board[], GameState *gameState)
 {
     Dice d = rollDice();
     printf("%s rolled %d.\n", player->name, d.total);
-    printf("%s moves from Square %d to Square %d\n", player->name, player->position, (player->position + d.total)%BOARD_SIZE);
+    printf("%s moves from Square %d to Square %d\n", player->name, player->position, (player->position + d.total) % BOARD_SIZE);
     if (player->position + d.total >= BOARD_SIZE)
     {
         printf("%s passed GO.\nCollected LKR 2,000\nCurrent Balance : LKR %d\n", player->name, player->cash += 2000);
     }
     player->position = (player->position + d.total) % BOARD_SIZE;
     printf("Landed on %s.\n\n", board[player->position].name);
+    resolveLanding(player, board, gameState);
+}
+
+void resolveLanding(Player *players, BoardSquare board[], GameState *gameState)
+{
+    BoardSquare *currentSquare = &board[players->position];
+
+    switch (currentSquare->type)
+    {
+    case PROPERTY:
+        /* Handle buying or rent */
+        break;
+
+    case GO_TO_JAIL:
+        /* Implement later */
+        break;
+
+    case TAX:
+        printf("%s paid tax of LKR : %d\nRemaining Balance : LKR %d\n", players->name, percentageCalc(players->cash, gameState->incomeTaxRate), players->cash-=percentageCalc(players->cash, gameState->incomeTaxRate));
+        break;
+
+    case FREE_PARKING:
+        printf("%s rests at Free Parking.\n", players->name);
+
+    default:
+        break;
+    }
 }

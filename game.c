@@ -13,6 +13,11 @@ Dice rollDice()
     return Diceroll;
 }
 
+void gameStateInit(GameState *gameState){
+    gameState->currentRound = 0;
+    gameState->incomeTaxRate = 15;
+}
+
 int percentageCalc(int amount, int rate)
 {
     return (amount * rate) / 100;
