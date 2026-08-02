@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include "types.h"
 
 Dice rollDice()
 {
-    Dice Diceroll;
-    Diceroll.dice1 = rand() % 6 + 1;
-    Diceroll.dice2 = rand() % 6 + 1;
-    Diceroll.total = Diceroll.dice1 + Diceroll.dice2;
+    Dice diceRoll;
 
-    return Diceroll;
+    diceRoll.dice1 = rand() % 6 + 1;
+    diceRoll.dice2 = rand() % 6 + 1;
+    diceRoll.total = diceRoll.dice1 + diceRoll.dice2;
+
+    return diceRoll;
 }
 
 void gameStateInit(GameState *gameState)
@@ -23,18 +23,21 @@ int percentageCalc(int amount, int rate)
 {
     return (amount * rate) / 100;
 }
-void runGame(GameState *gameState, BoardSquare *board)
+
+void runGame(GameState *gameState, BoardSquare board[])
 {
     Player players[NO_PLAYERS];
     playerInit(players);
 
-    for (int i = 0; i < 50; i++)
+    for (int round = 0; round < MAX_ROUNDS; round++)
     {
-        printf("Round %d\n", gameState->currentRound + 1);
-        movePlayer(&players[0], board, gameState);
-        movePlayer(&players[1], board, gameState);
-        movePlayer(&players[2], board, gameState);
-        movePlayer(&players[3], board, gameState);
+        printf("#####################################\nRound %d\n#####################################\n\n", gameState->currentRound + 1);
+
+        for (int playerIndex = 0;playerIndex < NO_PLAYERS;playerIndex++)
+        {
+            movePlayer(players, playerIndex, board, gameState);
+        }
+
         gameState->currentRound++;
     }
 }

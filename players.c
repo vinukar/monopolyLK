@@ -1,35 +1,40 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include "types.h"
 
-void playerInit(Player *players)
+void playerInit(Player players[])
 {
-    const char *PlayerNames[NO_PLAYERS] = {"Aggressive Investor", "Conservative Banker", "Risk Taker", "Opportunistic Trader"};
+    const char *playerNames[NO_PLAYERS] = {
+        "Aggressive Investor",
+        "Conservative Banker",
+        "Risk Taker",
+        "Opportunistic Trader"};
 
     printf("MONOPOLY-LK Simulation\n\n");
 
-    printf("Player 1 : %s\n", PlayerNames[0]);
-    printf("Player 2 : %s\n", PlayerNames[1]);
-    printf("Player 3 : %s\n", PlayerNames[2]);
-    printf("Player 4 : %s\n", PlayerNames[3]);
+    for (int i = 0; i < NO_PLAYERS; i++)
+    {
+        printf("Player %d : %s\n", i + 1, playerNames[i]);
+    }
 
-    printf("\nEach player bigins with LKR 30,000\n\n");
+    printf("\nEach player begins with LKR 30,000\n\n");
 
     for (int i = 0; i < NO_PLAYERS; i++)
     {
-        players[i].name = PlayerNames[i];
+        players[i].name = playerNames[i];
         players[i].cash = START_CASH;
         players[i].position = 0;
-
+        players[i].order = i;
+        players[i].strategy = (PlayerStrategy)i;
         players[i].roll = rollDice().total;
-        printf("%s rolles %d\n", players[i].name, players[i].roll);
+
+        printf("%s rolls %d\n", players[i].name, players[i].roll);
     }
 
-    // reroll the tied players
     int tied;
     do
     {
         tied = 0;
+
         for (int i = 0; i < NO_PLAYERS; i++)
         {
             for (int j = i + 1; j < NO_PLAYERS; j++)
@@ -39,35 +44,133 @@ void playerInit(Player *players)
                     tied = 1;
                     players[i].roll = rollDice().total;
                     players[j].roll = rollDice().total;
-                    printf("Tie between %s and %s.\nReroll: %s -> %d, %s -> %d\n\n", players[i].name, players[j].name, players[i].name, players[i].roll, players[j].name, players[j].roll);
+
+                    printf("Tie between %s and %s.\n",
+                           players[i].name, players[j].name);
+                    printf("Reroll: %s -> %d, %s -> %d\n\n",
+                           players[i].name, players[i].roll,
+                           players[j].name, players[j].roll);
                 }
             }
         }
     } while (tied);
 
-    // Sorting players
+    // sorting Players
+
     for (int i = 0; i < NO_PLAYERS - 1; i++)
     {
-        int max_idx = i;
+        int maxIndex = i;
+
         for (int j = i + 1; j < NO_PLAYERS; j++)
         {
-            if (players[j].roll > players[max_idx].roll)
-                max_idx = j;
+            if (players[j].roll > players[maxIndex].roll)
+            {
+                maxIndex = j;
+            }
         }
-        if (max_idx != i)
+
+        if (maxIndex != i)
         {
-            Player tmp = players[i];
-            players[i] = players[max_idx];
-            players[max_idx] = tmp;
+            Player temp = players[i];
+            players[i] = players[maxIndex];
+            players[maxIndex] = temp;
         }
     }
-    printf("\n%s will begin the game.\n", players[0].name);
 
+    printf("\n%s will begin the game.\n", players[0].name);
     printf("\nTurn order:\n");
+
     for (int i = 0; i < NO_PLAYERS; i++)
     {
+        players[i].order = i;
         printf("%s\n", players[i].name);
-        players[i].order = i + 1;
     }
+
     printf("\n\n");
+}
+
+void buyUtilities(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState)
+{
+    Player *player = &players[currentPlayerIndex];
+    BoardSquare *currentUtility = &board[squareIndex];
+
+    switch (player->strategy)
+    {
+    case AGGRESSIVE_INVESTOR:
+        if (player->cash >= currentUtility->price + futureRent())
+        {
+            player->cash -= currentUtility->price;
+            currentUtility->owner = currentPlayerIndex;
+
+            printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+            printf("Remaining Balance : LKR %d.\n", player->cash);
+        }
+        else
+        {
+            // Auction
+        }
+        break;
+
+    case CONSERVATIVE_BANKER:
+        if (player->cash / 2 >= currentUtility->price)
+        {
+            player->cash -= currentUtility->price;
+            currentUtility->owner = currentPlayerIndex;
+
+            printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+            printf("Remaining Balance : LKR %d\n", player->cash);
+        }
+        else
+        {
+            // Auction
+        }
+        break;
+
+    case RISK_TAKER:
+        if (player->cash >= currentUtility->price)
+        {
+            player->cash -= currentUtility->price;
+            currentUtility->owner = currentPlayerIndex;
+
+            printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+            printf("Remaining Balance : LKR %d\n", player->cash);
+        }
+        else
+        {
+            // Auction
+        }
+        break;
+
+    case OPPORTUNISTIC_TRADER:
+        if (player->cash >= currentUtility->price)
+        {
+
+            if (gameState->currentRound <= 5 || (squareIndex == 12 && board[28].owner == currentPlayerIndex) || (squareIndex == 28 && board[12].owner == currentPlayerIndex))
+            {
+                player->cash -= currentUtility->price;
+                currentUtility->owner = currentPlayerIndex;
+
+                printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+                printf("Remaining Balance : LKR %d\n", player->cash);
+            }
+            else
+            {
+                // Auction
+            }
+        }
+        else
+        {
+            // Auction
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
+int futureRent(void)
+{
+    // for testing
+    return 0;
 }

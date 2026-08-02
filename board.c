@@ -1,8 +1,7 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include "types.h"
 
-void boardInit(BoardSquare *board)
+void boardInit(BoardSquare board[])
 {
     const char *squareNames[BOARD_SIZE] = {
         "GO",
@@ -94,68 +93,95 @@ void boardInit(BoardSquare *board)
         board[i].name = squareNames[i];
         board[i].type = squareTypes[i];
         board[i].owner = -1;
+        board[i].price = 0;
     }
+
+    board[12].price = 3000; /* Ceylon Electricity Board */
+    board[28].price = 3000; /* National Water Supply and Drainage Board */
 }
 
-void movePlayer(Player *player, BoardSquare board[], GameState *gameState)
+void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState)
 {
+    Player *currentPlayer = &players[currentPlayerIndex];
     Dice d = rollDice();
-    printf("%s rolled %d.\n", player->name, d.total);
-    printf("%s moves from Square %d to Square %d\n", player->name, player->position, (player->position + d.total) % BOARD_SIZE);
-    if (player->position + d.total >= BOARD_SIZE)
+    int oldPosition = currentPlayer->position;
+    int newPosition = (oldPosition + d.total) % BOARD_SIZE;
+
+    printf("%s rolled %d.\n", currentPlayer->name, d.total);
+    printf("%s moves from Square %d to Square %d\n", currentPlayer->name, oldPosition, newPosition);
+
+    if (oldPosition + d.total >= BOARD_SIZE)
     {
-        printf("%s passed GO.\nCollected LKR 2,000\nCurrent Balance : LKR %d\n", player->name, player->cash += 2000);
+        currentPlayer->cash += GO_REWARD;
+        printf("%s passed GO.\n", currentPlayer->name);
+        printf("Collected LKR %d\n", GO_REWARD);
+        printf("Current Balance : LKR %d\n", currentPlayer->cash);
     }
-    player->position = (player->position + d.total) % BOARD_SIZE;
-    printf("Landed on %s.\n\n", board[player->position].name);
-    resolveLanding(player, board, gameState, d);
+
+    currentPlayer->position = newPosition;
+    printf("Landed on %s.\n\n", board[newPosition].name);
+
+    resolveLanding(players, currentPlayerIndex, board, gameState, d);
 }
 
-void resolveLanding(Player *players, BoardSquare board[], GameState *gameState , Dice d)
+void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState, Dice d)
 {
-    BoardSquare *currentSquare = &board[players->position];
+    Player *currentPlayer = &players[currentPlayerIndex];
+    int squareIndex = currentPlayer->position;
+    BoardSquare *currentSquare = &board[squareIndex];
 
     switch (currentSquare->type)
     {
     case PROPERTY:
-        
         break;
 
     case GO_TO_JAIL:
-        
         break;
 
     case TAX:
-        printf("%s paid tax of LKR : %d\nRemaining Balance : LKR %d\n", players->name, percentageCalc(players->cash, gameState->incomeTaxRate), players->cash-=percentageCalc(players->cash, gameState->incomeTaxRate));
+    {
+        int tax = percentageCalc(currentPlayer->cash,gameState->incomeTaxRate);
+
+        currentPlayer->cash -= tax;
+
+        printf("%s paid tax of LKR %d\n", currentPlayer->name, tax);
+        printf("Remaining Balance: LKR %d\n", currentPlayer->cash);
         break;
+    }
 
     case FREE_PARKING:
-        printf("%s rests at Free Parking.\n", players->name);
+        printf("%s rests at Free Parking.\n", currentPlayer->name);
+        break;
 
     case UTILITY:
         if (currentSquare->owner == -1)
         {
-            printf("%s is unowned. Current purchase price : LKR %d\n", currentSquare->name, currentSquare->price);
-            //utilitybuy function
+            printf("%s is unowned. Current purchase price : LKR %d\n",currentSquare->name, currentSquare->price);
+
+            buyUtilities(players, currentPlayerIndex,board, squareIndex, gameState);
         }
-        else if (currentSquare->owner != players->order)
+        else if (currentSquare->owner == currentPlayerIndex)
         {
-            if (&board[12].owner == &board[28].owner)
-            {
-                players->cash -= 4 * d.total;
-                players[currentSquare->owner].cash += 4 * d.total;
-                printf("%s pays double rent of %d to %s for landing on %s.\n", players->name, 4 * d.total, board[currentSquare->owner].name, currentSquare->name);
-            }
+            printf("%s owns this utility. No action.\n",currentPlayer->name);
+        }
+        else
+        {
+            int ownerIndex = currentSquare->owner;
+            int rent;
+
+            if (board[12].owner == ownerIndex && board[28].owner == ownerIndex)
+                rent = 10 * d.total;
             else
-            {
-                players->cash -= 4 * d.total;
-                players[currentSquare->owner].cash += 4 * d.total;
-                printf("%s pays rent to %s for landing on %s.\n", players->name, board[currentSquare->owner].name, currentSquare->name);
-            }
-        }else
-        {
-            printf("%s owns this property. No Action\n", players->name);
+                rent = 4 * d.total;
+
+            currentPlayer->cash -= rent;
+            players[ownerIndex].cash += rent;
+
+            printf("%s pays utility rent of LKR %d to %s for landing on %s.\n",currentPlayer->name,rent,players[ownerIndex].name,currentSquare->name);
+            printf("Remaining Balance : LKR %d\n", currentPlayer->cash);
         }
+        break;
+
     default:
         break;
     }
