@@ -61,13 +61,32 @@ typedef enum
     BANK
 } SquareType;
 
+typedef enum
+{
+    NO_PROPERTY_GROUP = -1,
+    BROWN_GROUP,
+    LIGHT_BLUE_GROUP,
+    PINK_GROUP,
+    ORANGE_GROUP,
+    RED_GROUP,
+    YELLOW_GROUP,
+    GREEN_GROUP,
+    DARK_BLUE_GROUP
+} PropertyGroup;
+
 typedef struct
 {
     int index;
     const char *name;
     SquareType type;
+
+    PropertyGroup group;
     int owner;
+
     int price;
+    int rent;
+    int mortgageValue;
+    int mortgageState;
 } BoardSquare;
 
 /* game.c */
@@ -78,7 +97,7 @@ void runGame(GameState *gameState, BoardSquare board[]);
 
 /* players.c */
 void playerInit(Player players[]);
-void buyServices(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState);
+void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState);
 int futureRent();
 
 /* board.c */

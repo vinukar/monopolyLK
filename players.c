@@ -89,20 +89,20 @@ void playerInit(Player players[])
     printf("\n\n");
 }
 
-void buyServices(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState)
+void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState)
 {
     Player *player = &players[currentPlayerIndex];
-    BoardSquare *currentUtility = &board[squareIndex];
+    BoardSquare *currentProperty = &board[squareIndex];
 
     switch (player->strategy)
     {
     case AGGRESSIVE_INVESTOR:
-        if (player->cash >= currentUtility->price + futureRent())
+        if (player->cash >= currentProperty->price + futureRent())
         {
-            player->cash -= currentUtility->price;
-            currentUtility->owner = currentPlayerIndex;
+            player->cash -= currentProperty->price;
+            currentProperty->owner = currentPlayerIndex;
 
-            printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+            printf("%s purchased %s for LKR %d.\n", player->name, currentProperty->name, currentProperty->price);
             printf("Remaining Balance : LKR %d.\n", player->cash);
         }
         else
@@ -112,12 +112,12 @@ void buyServices(Player players[], int currentPlayerIndex, BoardSquare board[], 
         break;
 
     case CONSERVATIVE_BANKER:
-        if (player->cash / 2 >= currentUtility->price)
+        if (player->cash / 2 >= currentProperty->price)
         {
-            player->cash -= currentUtility->price;
-            currentUtility->owner = currentPlayerIndex;
+            player->cash -= currentProperty->price;
+            currentProperty->owner = currentPlayerIndex;
 
-            printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+            printf("%s purchased %s for LKR %d.\n", player->name, currentProperty->name, currentProperty->price);
             printf("Remaining Balance : LKR %d\n", player->cash);
         }
         else
@@ -127,12 +127,12 @@ void buyServices(Player players[], int currentPlayerIndex, BoardSquare board[], 
         break;
 
     case RISK_TAKER:
-        if (player->cash >= currentUtility->price)
+        if (player->cash >= currentProperty->price)
         {
-            player->cash -= currentUtility->price;
-            currentUtility->owner = currentPlayerIndex;
+            player->cash -= currentProperty->price;
+            currentProperty->owner = currentPlayerIndex;
 
-            printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+            printf("%s purchased %s for LKR %d.\n", player->name, currentProperty->name, currentProperty->price);
             printf("Remaining Balance : LKR %d\n", player->cash);
         }
         else
@@ -142,17 +142,17 @@ void buyServices(Player players[], int currentPlayerIndex, BoardSquare board[], 
         break;
 
     case OPPORTUNISTIC_TRADER:
-        if (currentUtility->type == UTILITY)
+        if (currentProperty->type == UTILITY)
         {
-            if (player->cash >= currentUtility->price)
+            if (player->cash >= currentProperty->price)
             {
 
                 if (gameState->currentRound <= 5 || (squareIndex == 12 && board[28].owner == currentPlayerIndex) || (squareIndex == 28 && board[12].owner == currentPlayerIndex))
                 {
-                    player->cash -= currentUtility->price;
-                    currentUtility->owner = currentPlayerIndex;
+                    player->cash -= currentProperty->price;
+                    currentProperty->owner = currentPlayerIndex;
 
-                    printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+                    printf("%s purchased %s for LKR %d.\n", player->name, currentProperty->name, currentProperty->price);
                     printf("Remaining Balance : LKR %d\n", player->cash);
                 }
                 else
@@ -166,13 +166,26 @@ void buyServices(Player players[], int currentPlayerIndex, BoardSquare board[], 
             }
             break;
         }
-        else if (currentUtility->type == RAILWAY)
+        else if (currentProperty->type == RAILWAY)
         {
 
-            if (player->cash >= currentUtility->price)
+            if (player->cash >= currentProperty->price)
             {
                 // add the logic later for now just buy
-                printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+                printf("%s purchased %s for LKR %d.\n", player->name, currentProperty->name, currentProperty->price);
+                player->cash -= currentProperty->price;
+                currentProperty->owner = currentPlayerIndex;
+                printf("Remaining Balance : LKR %d\n", player->cash);
+            }
+        }
+        else if (currentProperty->type == PROPERTY)
+        {
+            if (player->cash >= currentProperty->price)
+            {
+                // add the logic later for now just buy
+                printf("%s purchased %s for LKR %d.\n", player->name, currentProperty->name, currentProperty->price);
+                player->cash -= currentProperty->price;
+                currentProperty->owner = currentPlayerIndex;
                 printf("Remaining Balance : LKR %d\n", player->cash);
             }
         }

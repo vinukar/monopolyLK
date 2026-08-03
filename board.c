@@ -1,6 +1,13 @@
 #include <stdio.h>
 #include "types.h"
 
+static void setPropertyData(BoardSquare board[], int index, PropertyGroup group, int purchasePrice, int rent)
+{
+    board[index].group = group;
+    board[index].price = purchasePrice;
+    board[index].rent = rent;
+}
+
 void boardInit(BoardSquare board[])
 {
     const char *squareNames[BOARD_SIZE] = {
@@ -92,8 +99,9 @@ void boardInit(BoardSquare board[])
         board[i].index = i;
         board[i].name = squareNames[i];
         board[i].type = squareTypes[i];
-        board[i].owner = -1;
-        board[i].price = 0;
+        board[i].owner = -1; //-1 = bank
+        // board[i].price = 0;
+        board[i].mortgageState = 0;
     }
 
     board[12].price = 3000; /* Ceylon Electricity Board */
@@ -101,7 +109,30 @@ void boardInit(BoardSquare board[])
     board[5].price = 5000;
     board[15].price = 5000;
     board[25].price = 5000;
-    board[35].price = 5000;
+    board[35].price = 5000; // railways
+
+    setPropertyData(board, 1, BROWN_GROUP, 1500, 100);
+    setPropertyData(board, 3, BROWN_GROUP, 1800, 120);
+    setPropertyData(board, 6, LIGHT_BLUE_GROUP, 2500, 180);
+    setPropertyData(board, 8, LIGHT_BLUE_GROUP, 2700, 200);
+    setPropertyData(board, 9, LIGHT_BLUE_GROUP, 3000, 220);
+    setPropertyData(board, 11, PINK_GROUP, 3500, 260);
+    setPropertyData(board, 13, PINK_GROUP, 3800, 280);
+    setPropertyData(board, 14, PINK_GROUP, 4000, 300);
+    setPropertyData(board, 16, ORANGE_GROUP, 4500, 350);
+    setPropertyData(board, 18, ORANGE_GROUP, 4700, 370);
+    setPropertyData(board, 19, ORANGE_GROUP, 5000, 400);
+    setPropertyData(board, 21, RED_GROUP, 5500, 450);
+    setPropertyData(board, 23, RED_GROUP, 5800, 480);
+    setPropertyData(board, 24, RED_GROUP, 6000, 500);
+    setPropertyData(board, 26, YELLOW_GROUP, 6500, 600);
+    setPropertyData(board, 27, YELLOW_GROUP, 6800, 620);
+    setPropertyData(board, 29, YELLOW_GROUP, 7000, 650);
+    setPropertyData(board, 31, GREEN_GROUP, 8000, 750);
+    setPropertyData(board, 32, GREEN_GROUP, 8300, 780);
+    setPropertyData(board, 34, GREEN_GROUP, 8500, 800);
+    setPropertyData(board, 37, DARK_BLUE_GROUP, 10000, 1000);
+    setPropertyData(board, 39, DARK_BLUE_GROUP, 12000, 1200);
 }
 
 void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState)
@@ -137,6 +168,24 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
     switch (currentSquare->type)
     {
     case PROPERTY:
+        if (currentSquare->owner == -1)
+        {
+            printf("%s is unowned. Current purchase price : LKR %d\n", currentSquare->name, currentSquare->price);
+            buyProperties(players, currentPlayerIndex, board, squareIndex, gameState);
+            
+        }else if (currentSquare->owner == currentPlayerIndex)
+        {
+            printf("%s ownes this property. No Action ");
+        }else
+        {
+            printf("%s landed on %s.\n", currentPlayer->name, currentSquare->name);
+            int rent = currentSquare->rent;
+            currentPlayer->cash -= rent;
+            players[currentSquare->owner].cash += rent;
+            printf("Rent Paid : LKR %d\n", rent);
+            printf("Owner : %s\n", players[currentSquare->owner].name);
+            printf("Remaining Balance : LKR %d\n", currentPlayer->cash);
+        }
         break;
 
     case GO_TO_JAIL:
@@ -165,7 +214,7 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
         else if (currentSquare->owner == -1)
         {
             printf("%s is unowned. Current purchase price : LKR %d\n", currentSquare->name, currentSquare->price);
-            buyServices(players, currentPlayerIndex, board, squareIndex, gameState);
+            buyProperties(players, currentPlayerIndex, board, squareIndex, gameState);
         }
         else
         {
@@ -188,7 +237,7 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
         {
             printf("%s is unowned. Current purchase price : LKR %d\n", currentSquare->name, currentSquare->price);
 
-            buyServices(players, currentPlayerIndex, board, squareIndex, gameState);
+            buyProperties(players, currentPlayerIndex, board, squareIndex, gameState);
         }
 
         else
