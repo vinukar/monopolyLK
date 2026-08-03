@@ -78,12 +78,12 @@ void runGame(GameState *gameState, BoardSquare board[]);
 
 /* players.c */
 void playerInit(Player players[]);
-void buyUtilities(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState);
+void buyServices(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState);
 int futureRent();
 
 /* board.c */
 void boardInit(BoardSquare board[]);
 void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState);
 void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState, Dice d);
-
+int railwayRent(BoardSquare board[], int owner);
 #endif

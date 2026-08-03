@@ -89,7 +89,7 @@ void playerInit(Player players[])
     printf("\n\n");
 }
 
-void buyUtilities(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState)
+void buyServices(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState)
 {
     Player *player = &players[currentPlayerIndex];
     BoardSquare *currentUtility = &board[squareIndex];
@@ -142,34 +142,44 @@ void buyUtilities(Player players[], int currentPlayerIndex, BoardSquare board[],
         break;
 
     case OPPORTUNISTIC_TRADER:
-        if (player->cash >= currentUtility->price)
+        if (currentUtility->type == UTILITY)
         {
-
-            if (gameState->currentRound <= 5 || (squareIndex == 12 && board[28].owner == currentPlayerIndex) || (squareIndex == 28 && board[12].owner == currentPlayerIndex))
+            if (player->cash >= currentUtility->price)
             {
-                player->cash -= currentUtility->price;
-                currentUtility->owner = currentPlayerIndex;
 
-                printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
-                printf("Remaining Balance : LKR %d\n", player->cash);
+                if (gameState->currentRound <= 5 || (squareIndex == 12 && board[28].owner == currentPlayerIndex) || (squareIndex == 28 && board[12].owner == currentPlayerIndex))
+                {
+                    player->cash -= currentUtility->price;
+                    currentUtility->owner = currentPlayerIndex;
+
+                    printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+                    printf("Remaining Balance : LKR %d\n", player->cash);
+                }
+                else
+                {
+                    // Auction
+                }
             }
             else
             {
                 // Auction
             }
+            break;
         }
-        else
+        else if (currentUtility->type == RAILWAY)
         {
-            // Auction
-        }
-        break;
 
-    default:
-        break;
+            if (player->cash >= currentUtility->price)
+            {
+                // add the logic later for now just buy
+                printf("%s purchased %s for LKR %d.\n", player->name, currentUtility->name, currentUtility->price);
+                printf("Remaining Balance : LKR %d\n", player->cash);
+            }
+        }
     }
 }
 
-int futureRent(void)
+int futureRent()
 {
     // for testing
     return 0;

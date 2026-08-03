@@ -98,6 +98,10 @@ void boardInit(BoardSquare board[])
 
     board[12].price = 3000; /* Ceylon Electricity Board */
     board[28].price = 3000; /* National Water Supply and Drainage Board */
+    board[5].price = 5000;
+    board[15].price = 5000;
+    board[25].price = 5000;
+    board[35].price = 5000;
 }
 
 void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState)
@@ -140,7 +144,7 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
 
     case TAX:
     {
-        int tax = percentageCalc(currentPlayer->cash,gameState->incomeTaxRate);
+        int tax = percentageCalc(currentPlayer->cash, gameState->incomeTaxRate);
 
         currentPlayer->cash -= tax;
 
@@ -153,17 +157,40 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
         printf("%s rests at Free Parking.\n", currentPlayer->name);
         break;
 
-    case UTILITY:
-        if (currentSquare->owner == -1)
+    case RAILWAY:
+        if (currentSquare->owner == currentPlayerIndex)
         {
-            printf("%s is unowned. Current purchase price : LKR %d\n",currentSquare->name, currentSquare->price);
+            printf("%s owns this utility. No action.\n", currentPlayer->name);
+        }
+        else if (currentSquare->owner == -1)
+        {
+            printf("%s is unowned. Current purchase price : LKR %d\n", currentSquare->name, currentSquare->price);
+            buyServices(players, currentPlayerIndex, board, squareIndex, gameState);
+        }
+        else
+        {
+            printf("%s landed on %s.\n", currentPlayer->name, currentSquare->name);
+            int rent = railwayRent(board, currentSquare->owner);
+            currentPlayer->cash -= rent;
+            players[currentSquare->owner].cash += rent;
+            printf("Rent Paid : LKR %d\n", rent);
+            printf("Owner : %s\n", players[currentSquare->owner].name);
+            printf("Remaining Balance : LKR %d\n", currentPlayer->cash);
+        }
+        break;
 
-            buyUtilities(players, currentPlayerIndex,board, squareIndex, gameState);
-        }
-        else if (currentSquare->owner == currentPlayerIndex)
+    case UTILITY:
+        if (currentSquare->owner == currentPlayerIndex)
         {
-            printf("%s owns this utility. No action.\n",currentPlayer->name);
+            printf("%s owns this utility. No action.\n", currentPlayer->name);
         }
+        else if (currentSquare->owner == -1)
+        {
+            printf("%s is unowned. Current purchase price : LKR %d\n", currentSquare->name, currentSquare->price);
+
+            buyServices(players, currentPlayerIndex, board, squareIndex, gameState);
+        }
+
         else
         {
             int ownerIndex = currentSquare->owner;
@@ -177,12 +204,37 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
             currentPlayer->cash -= rent;
             players[ownerIndex].cash += rent;
 
-            printf("%s pays utility rent of LKR %d to %s for landing on %s.\n",currentPlayer->name,rent,players[ownerIndex].name,currentSquare->name);
+            printf("%s pays utility rent of LKR %d to %s for landing on %s.\n", currentPlayer->name, rent, players[ownerIndex].name, currentSquare->name);
             printf("Remaining Balance : LKR %d\n", currentPlayer->cash);
         }
         break;
 
     default:
+        break;
+    }
+}
+
+int railwayRent(BoardSquare board[], int owner)
+{
+    int count = 0;
+    for (int i = 5; i < 36; i += 10)
+    {
+        if (board[i].owner == owner)
+            count++;
+    }
+    switch (count)
+    {
+    case 1:
+        return 250;
+        break;
+    case 2:
+        return 500;
+        break;
+    case 3:
+        return 1000;
+        break;
+    case 4:
+        return 2000;
         break;
     }
 }
