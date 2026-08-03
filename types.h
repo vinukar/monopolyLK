@@ -44,6 +44,7 @@ typedef struct
 {
     int currentRound;
     int incomeTaxRate;
+    int cdfRate;
 } GameState;
 
 typedef enum
@@ -84,6 +85,7 @@ typedef struct
     int owner;
 
     int price;
+    int currentValue;
     int rent;
     int mortgageValue;
     int mortgageState;
@@ -105,4 +107,5 @@ void boardInit(BoardSquare board[]);
 void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState);
 void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState, Dice d);
 int railwayRent(BoardSquare board[], int owner);
+int playerAssetCalc(BoardSquare board[], int playerIndex);
 #endif

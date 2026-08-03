@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "types.h"
 
 Dice rollDice()
@@ -17,11 +18,12 @@ void gameStateInit(GameState *gameState)
 {
     gameState->currentRound = 0;
     gameState->incomeTaxRate = 15;
+    gameState->cdfRate = 10;
 }
 
 int percentageCalc(int amount, int rate)
 {
-    return (amount * rate) / 100;
+    return (int)roundf(((float)amount * (float)rate) / 100.0f);
 }
 
 void runGame(GameState *gameState, BoardSquare board[])
