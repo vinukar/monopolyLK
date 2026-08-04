@@ -94,16 +94,6 @@ void boardInit(BoardSquare board[])
         BANK,
         PROPERTY};
 
-    for (int i = 0; i < BOARD_SIZE; i++)
-    {
-        board[i].index = i;
-        board[i].name = squareNames[i];
-        board[i].type = squareTypes[i];
-        board[i].owner = -1; //-1 = bank
-        // board[i].price = 0;
-        board[i].mortgageState = 0;
-    }
-
     board[12].price = 3000; /* Ceylon Electricity Board */
     board[28].price = 3000; /* National Water Supply and Drainage Board */
     board[5].price = 5000;
@@ -133,6 +123,16 @@ void boardInit(BoardSquare board[])
     setPropertyData(board, 34, GREEN_GROUP, 8500, 800);
     setPropertyData(board, 37, DARK_BLUE_GROUP, 10000, 1000);
     setPropertyData(board, 39, DARK_BLUE_GROUP, 12000, 1200);
+
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        board[i].index = i;
+        board[i].name = squareNames[i];
+        board[i].type = squareTypes[i];
+        board[i].owner = -1; //-1 = bank
+        board[i].mortgageState = 0;
+        board[i].currentValue = board[i].price;
+    }
 }
 
 void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState)
@@ -264,7 +264,7 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
     case EVENT:
         if (currentSquare->index == 2)
         {
-            int tax = percentageCalc(playerAssetCalc(board, currentPlayerIndex) , gameState->cdfRate);
+            int tax = percentageCalc(playerAssetCalc(board, currentPlayerIndex), gameState->cdfRate);
             currentPlayer->cash -= tax;
 
             printf("%s paid tax of LKR : %d to Community Development Fund\n", currentPlayer->name, tax);

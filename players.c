@@ -109,7 +109,7 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
         }
         else
         {
-            // Auction
+            startAuction(players, currentProperty);
         }
         break;
 
@@ -124,7 +124,7 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
         }
         else
         {
-            // Auction
+            startAuction(players, currentProperty);
         }
         break;
 
@@ -139,7 +139,7 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
         }
         else
         {
-            // Auction
+            startAuction(players, currentProperty);
         }
         break;
 
@@ -159,12 +159,12 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
                 }
                 else
                 {
-                    // Auction
+                    startAuction(players, currentProperty);
                 }
             }
             else
             {
-                // Auction
+                startAuction(players, currentProperty);
             }
             break;
         }
@@ -194,7 +194,7 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
     }
 }
 
-int futureRent()
+int futureRent() // to be implemented later
 {
     // for testing
     return 0;
@@ -212,24 +212,130 @@ int payJailBail(Player player, int currentRound)
             return 0;
         break;
     case CONSERVATIVE_BANKER:
-        if (player.cash >= JAIL_BAIL*2)
+        if (player.cash >= JAIL_BAIL * 2)
             return 1;
         else
             return 0;
         break;
     case OPPORTUNISTIC_TRADER:
-            if (player.cash >= JAIL_BAIL*2)
+        if (player.cash >= JAIL_BAIL * 2)
+        {
+            if (currentRound > 20)
             {
-                if (currentRound > 20)
-                {
-                    return 1;
-                }
-            }else
-            {
-                return 0
-                ;
+                return 1;
             }
-        
+            else
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            return 0;
+        }
+
         break;
     }
+}
+
+void startAuction(Player players[], BoardSquare *asset)
+{
+    int highestbid = (asset->currentValue / 2);
+    printf("Auction Started.\n");
+    printf("Property : %s\n", asset->name);
+    printf("Starting Bid : %d\n", highestbid);
+
+    int active[NO_PLAYERS] = {1, 1, 1, 1};
+    int highestbidder = -1;
+    int activeCount = NO_PLAYERS;
+    int bidLimint[NO_PLAYERS] = {0, 0, 0, 0};
+    for (int i = 0; i < NO_PLAYERS; i++)
+    {
+        bidLimint[i] = auctionBidLimit(&players[i], asset->currentValue);
+        if (bidLimint[i] < highestbid)
+        {
+            active[i] = 0;
+            activeCount--;
+            printf("%s withdraws.\n", players[i].name);
+        }
+    }
+
+    while (highestbidder == -1 || activeCount > 1)
+    {
+
+        for (int i = 0; i < NO_PLAYERS; i++)
+        {
+            if (active[i] == 0)
+            {
+                continue;
+            }
+
+            if (i == highestbidder) // doesn't bid againt himself
+            {
+                continue;
+            }
+
+            if (highestbidder != -1)
+            {
+                highestbid += AUCTION_INCREMENT;
+            }
+
+            if (highestbid <= bidLimint[i])
+            {
+                highestbidder = i;
+                printf("%s bids LKR %d.\n", players[i].name, highestbid);
+            }
+            else
+            {
+                active[i] = 0;
+                activeCount--;
+
+                printf("%s withdraws.\n", players[i].name);
+            }
+
+            if (activeCount == 1)
+            {
+                break;
+            }
+        }
+    }
+    asset->owner = highestbidder;
+    players[highestbidder].cash -= highestbid;
+    printf("%s wins the auction.\n", players[highestbidder].name);
+    printf("%s purchased %s for LKR : %d\n", players[highestbidder].name, asset->name, highestbid);
+    printf("Remaining Balance : LKR %d\n", players[highestbidder].cash);
+}
+
+int auctionBidLimit(Player *player, int marketValue)
+{
+    int limit = 0;
+
+    switch (player->strategy)
+    {
+    case AGGRESSIVE_INVESTOR:
+        limit = (marketValue * 120) / 100;
+        break;
+
+    case CONSERVATIVE_BANKER:
+        limit = marketValue - AUCTION_INCREMENT;
+        break;
+
+    case RISK_TAKER:
+        limit = player->cash;
+        break;
+
+    case OPPORTUNISTIC_TRADER:
+        limit = marketValue - AUCTION_INCREMENT;
+        break;
+
+    default:
+        limit = 0;
+        break;
+    }
+    if (limit > player->cash) // if player dont have enough money
+    {
+        limit = player->cash;
+    }
+
+    return limit;
 }

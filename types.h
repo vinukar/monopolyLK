@@ -11,7 +11,7 @@
 #define GO_REWARD 2000
 #define JAIL_BAIL 300
 #define EVENT_DECK_SIZE 20
-#define PROPERTY_GROUPS 8
+#define AUCTION_INCREMENT 250
 
 typedef enum
 {
@@ -103,6 +103,8 @@ void playerInit(Player players[]);
 void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState);
 int payJailBail(Player player, int currentRound);
 int futureRent();
+int auctionBidLimit(Player *player, int marketValue);
+void startAuction(Player players[], BoardSquare *asset);
 
 /* board.c */
 void boardInit(BoardSquare board[]);
