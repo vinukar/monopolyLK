@@ -9,9 +9,7 @@
 #define MAX_ROUNDS 500
 #define START_CASH 30000
 #define GO_REWARD 2000
-#define JAIL_POSITION 10
-#define GO_TO_JAIL_POSITION 30
-#define BAIL_AMOUNT 300
+#define JAIL_BAIL 300
 #define EVENT_DECK_SIZE 20
 #define PROPERTY_GROUPS 8
 
@@ -31,6 +29,9 @@ typedef struct
     int position;
     int order;
     PlayerStrategy strategy;
+
+    int jailed;
+    int jailTurns;
 } Player;
 
 typedef struct
@@ -100,6 +101,7 @@ void runGame(GameState *gameState, BoardSquare board[]);
 /* players.c */
 void playerInit(Player players[]);
 void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState);
+int payJailBail(Player player, int currentRound);
 int futureRent();
 
 /* board.c */

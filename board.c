@@ -175,7 +175,7 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
         }
         else if (currentSquare->owner == currentPlayerIndex)
         {
-            printf("%s ownes this property. No Action ", currentPlayer->name);
+            printf("%s ownes this property. No Action\n", currentPlayer->name);
         }
         else
         {
@@ -190,6 +190,9 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
         break;
 
     case GO_TO_JAIL:
+        printf("%s is sent to Jail.\n", currentPlayer->name);
+        currentPlayer->position = 10; // Jail position
+        currentPlayer->jailed = 1;
         break;
 
     case TAX:

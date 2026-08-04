@@ -35,11 +35,48 @@ void runGame(GameState *gameState, BoardSquare board[])
     {
         printf("#####################################\nRound %d\n#####################################\n\n", gameState->currentRound + 1);
 
-        for (int playerIndex = 0;playerIndex < NO_PLAYERS;playerIndex++)
+        for (int playerIndex = 0; playerIndex < NO_PLAYERS; playerIndex++)
         {
-            movePlayer(players, playerIndex, board, gameState);
-        }
+            if (players[playerIndex].jailed)
+            {
+                if (payJailBail(players[playerIndex], gameState->currentRound) == 1)
+                {
+                    players[playerIndex].cash -= JAIL_BAIL;
+                    players[playerIndex].jailed = 0;
+                    players[playerIndex].jailTurns = 0;
+                    printf("%s paid the jail bail and is released from Jail.\n", players[playerIndex].name);
+                    movePlayer(players, playerIndex, board, gameState);
+                }
+                else
+                {
+                    printf("%s is in Jail. Attempting to roll doubles to get out.\n", players[playerIndex].name);
+                    Dice diceRoll = rollDice();
+                    if (diceRoll.dice1 == diceRoll.dice2)
+                    {
+                        printf("%s rolled doubles (%d, %d) and is released from Jail!\n", players[playerIndex].name, diceRoll.dice1, diceRoll.dice2);
+                        players[playerIndex].jailed = 0;
+                        players[playerIndex].jailTurns = 0;
+                        movePlayer(players, playerIndex, board, gameState);
+                    }
+                    else
+                    {
+                        players[playerIndex].jailTurns++;
+                        printf("%s did not roll doubles. Remains in Jail for %d turn(s).\n", players[playerIndex].name, players[playerIndex].jailTurns);
+                        if (players[playerIndex].jailTurns >= 3)
+                        {
+                            printf("%s has been in Jail for 3 turns. Paying LKR %d to get out.\n", players[playerIndex].name, JAIL_BAIL);
+                            players[playerIndex].cash -= JAIL_BAIL;
+                            players[playerIndex].jailed = 0;
+                            players[playerIndex].jailTurns = 0;
+                            movePlayer(players, playerIndex, board, gameState);
+                        }
+                    }
+                }
+            }
+            else
+                movePlayer(players, playerIndex, board, gameState);
 
-        gameState->currentRound++;
+            gameState->currentRound++;
+        }
     }
 }

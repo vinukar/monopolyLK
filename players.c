@@ -23,8 +23,10 @@ void playerInit(Player players[])
         players[i].name = playerNames[i];
         players[i].cash = START_CASH;
         players[i].position = 0;
-        players[i].order = i;
+        // players[i].order = i;
         players[i].strategy = (PlayerStrategy)i;
+        players[i].jailed = 0;
+        players[i].jailTurns = 0;
         players[i].roll = rollDice().total;
 
         printf("%s rolls %d\n", players[i].name, players[i].roll);
@@ -196,4 +198,38 @@ int futureRent()
 {
     // for testing
     return 0;
+}
+
+int payJailBail(Player player, int currentRound)
+{
+    switch (player.strategy)
+    {
+    case AGGRESSIVE_INVESTOR:
+    case RISK_TAKER:
+        if (player.cash >= JAIL_BAIL)
+            return 1;
+        else
+            return 0;
+        break;
+    case CONSERVATIVE_BANKER:
+        if (player.cash >= JAIL_BAIL*2)
+            return 1;
+        else
+            return 0;
+        break;
+    case OPPORTUNISTIC_TRADER:
+            if (player.cash >= JAIL_BAIL*2)
+            {
+                if (currentRound > 20)
+                {
+                    return 1;
+                }
+            }else
+            {
+                return 0
+                ;
+            }
+        
+        break;
+    }
 }
