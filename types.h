@@ -12,7 +12,8 @@
 #define JAIL_BAIL 300
 #define EVENT_DECK_SIZE 20
 #define AUCTION_INCREMENT 250
-
+#define RAILWAY_PRICE 5000
+#define UTILITY_PRICE 3000
 typedef enum
 {
     AGGRESSIVE_INVESTOR,
@@ -32,6 +33,9 @@ typedef struct
 
     int jailed;
     int jailTurns;
+    int noProperties;
+    int noHotels;
+    int loanAmount;
 } Player;
 
 typedef struct
@@ -87,7 +91,10 @@ typedef struct
 
     int price;
     int currentValue;
+    int houses; // 5 houses = 1 hotel
     int rent;
+    int houseValue;
+    int hotelValue;
     int mortgageValue;
     int mortgageState;
 } BoardSquare;
@@ -105,6 +112,7 @@ int payJailBail(Player player, int currentRound);
 int futureRent();
 int auctionBidLimit(Player *player, int marketValue);
 void startAuction(Player players[], BoardSquare *asset);
+int ownsMonopoly(BoardSquare board[], int playerIndex, PropertyGroup group);
 
 /* board.c */
 void boardInit(BoardSquare board[]);

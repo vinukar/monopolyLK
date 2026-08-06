@@ -52,7 +52,7 @@ void boardInit(BoardSquare board[])
         "Bank of Ceylon",
         "Galle Face"};
 
-    static const SquareType squareTypes[BOARD_SIZE] = {
+    const SquareType squareTypes[BOARD_SIZE] = {
         GO,
         PROPERTY,
         EVENT,
@@ -94,12 +94,12 @@ void boardInit(BoardSquare board[])
         BANK,
         PROPERTY};
 
-    board[12].price = 3000; /* Ceylon Electricity Board */
-    board[28].price = 3000; /* National Water Supply and Drainage Board */
-    board[5].price = 5000;
-    board[15].price = 5000;
-    board[25].price = 5000;
-    board[35].price = 5000; // railways
+    board[12].price = UTILITY_PRICE; /* Ceylon Electricity Board */
+    board[28].price = UTILITY_PRICE; /* National Water Supply and Drainage Board */
+    board[5].price = RAILWAY_PRICE;
+    board[15].price = RAILWAY_PRICE;
+    board[25].price = RAILWAY_PRICE;
+    board[35].price = RAILWAY_PRICE; // railways
 
     setPropertyData(board, 1, BROWN_GROUP, 1500, 100);
     setPropertyData(board, 3, BROWN_GROUP, 1800, 120);
@@ -130,8 +130,57 @@ void boardInit(BoardSquare board[])
         board[i].name = squareNames[i];
         board[i].type = squareTypes[i];
         board[i].owner = -1; //-1 = bank
-        board[i].mortgageState = 0;
         board[i].currentValue = board[i].price;
+        board[i].mortgageState = 0;
+        board[i].mortgageValue = board[i].price / 2;
+        switch (board[i].group)
+        {
+        case BROWN_GROUP:
+            board[i].houseValue = 500;
+            board[i].hotelValue = 2000;
+            break;
+
+        case LIGHT_BLUE_GROUP:
+            board[i].houseValue = 750;
+            board[i].hotelValue = 3000;
+            break;
+
+        case PINK_GROUP:
+            board[i].houseValue = 1000;
+            board[i].hotelValue = 4000;
+            break;
+
+        case ORANGE_GROUP:
+            board[i].houseValue = 1250;
+            board[i].hotelValue = 5000;
+            break;
+
+        case RED_GROUP:
+            board[i].houseValue = 1500;
+            board[i].hotelValue = 6000;
+            break;
+
+        case YELLOW_GROUP:
+            board[i].houseValue = 2000;
+            board[i].hotelValue = 8000;
+            break;
+
+        case GREEN_GROUP:
+            board[i].houseValue = 2500;
+            board[i].hotelValue = 10000;
+            break;
+
+        case DARK_BLUE_GROUP:
+            board[i].houseValue = 3000;
+            board[i].hotelValue = 12000;
+            break;
+
+        case NO_PROPERTY_GROUP:
+        default:
+            board[i].houseValue = 0;
+            board[i].hotelValue = 0;
+            break;
+        }
     }
 }
 

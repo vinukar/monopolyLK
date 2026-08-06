@@ -339,3 +339,30 @@ int auctionBidLimit(Player *player, int marketValue)
 
     return limit;
 }
+
+int ownsMonopoly(BoardSquare board[], int playerIndex, PropertyGroup group)
+{
+    int propertyCount = 0;
+    int ownedCount = 0;
+
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (board[i].type == PROPERTY && board[i].group == group)
+        {
+            propertyCount++;
+
+            if (board[i].owner == playerIndex)
+            {
+                ownedCount++;
+            }
+        }
+    }
+
+    return propertyCount == ownedCount;
+}
+
+void buyHouse(int playerIndex, PropertyGroup group) {
+    if (playerIndex == NO_PLAYERS) {
+     //add the house build function
+    }
+}
