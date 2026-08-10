@@ -27,6 +27,9 @@ void playerInit(Player players[])
         players[i].strategy = (PlayerStrategy)i;
         players[i].jailed = 0;
         players[i].jailTurns = 0;
+        players[i].noProperties = 0;
+        players[i].noHotels = 0;
+        players[i].loanAmount = 0;
         players[i].roll = rollDice().total;
 
         printf("%s rolls %d\n", players[i].name, players[i].roll);
@@ -194,9 +197,9 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
     }
 }
 
-int futureRent() // to be implemented later
+int futureRent()
 {
-    // for testing
+    //TODO : Add the logic
     return 0;
 }
 
@@ -258,6 +261,13 @@ void startAuction(Player players[], BoardSquare *asset)
             activeCount--;
             printf("%s withdraws.\n", players[i].name);
         }
+    }
+
+    if (activeCount == 0)
+    {
+        printf("No player bids. %s remains with the Bank.\n",
+               asset->name);
+        return;
     }
 
     while (highestbidder == -1 || activeCount > 1)
@@ -340,29 +350,123 @@ int auctionBidLimit(Player *player, int marketValue)
     return limit;
 }
 
-int ownsMonopoly(BoardSquare board[], int playerIndex, PropertyGroup group)
+void constructBuildings(Player players[], int playerIndex, BoardSquare board[], GameState *gameState)
 {
-    int propertyCount = 0;
-    int ownedCount = 0;
+    Player *player = &players[playerIndex];
 
-    for (int i = 0; i < BOARD_SIZE; i++)
+    for (int group = 0; group <= 7; group++)
     {
-        if (board[i].type == PROPERTY && board[i].group == group)
-        {
-            propertyCount++;
+        int totalProperties = 0;
+        int ownedProperties = 0;
 
-            if (board[i].owner == playerIndex)
+        // Check monopoly
+        for (int i = 0; i < BOARD_SIZE; i++)
+        {
+            if (board[i].type == PROPERTY &&
+                board[i].group == group)
             {
-                ownedCount++;
+                totalProperties++;
+
+                if (board[i].owner == playerIndex)
+                {
+                    ownedProperties++;
+                }
             }
         }
-    }
 
-    return propertyCount == ownedCount;
-}
+        if (totalProperties != ownedProperties || totalProperties == 0)
+        {
+            continue;
+        }
 
-void buyHouse(int playerIndex, PropertyGroup group) {
-    if (playerIndex == NO_PLAYERS) {
-     //add the house build function
+        int keepBuilding = 1;
+
+        while (keepBuilding)
+        {
+            int minimumBuildings = 6;
+            int propertyIndex = -1;
+
+            // Find least-developed property
+            for (int i = 0; i < BOARD_SIZE; i++)
+            {
+                if (board[i].type == PROPERTY && board[i].group == group)
+                {
+                    if (board[i].buildings < minimumBuildings)
+                    {
+                        minimumBuildings = board[i].buildings;
+                        propertyIndex = i;
+                    }
+                }
+            }
+
+            // all hotels
+            if (minimumBuildings >= 5)
+            {
+                break;
+            }
+
+            int cost;
+
+            if (minimumBuildings < 4)
+            {
+                cost = board[propertyIndex].houseValue;
+            }
+            else
+            {
+                cost = board[propertyIndex].hotelValue;
+            }
+
+            if (player->cash < cost)
+            {
+                break;
+            }
+
+            // Player behaviour
+            switch (player->strategy)
+            {
+            case AGGRESSIVE_INVESTOR:
+                break;
+
+            case RISK_TAKER:
+                break;
+
+            case CONSERVATIVE_BANKER:
+
+                // no hotels if loan exists
+                if (minimumBuildings == 4 && player->loanAmount > 0)
+                {
+                    keepBuilding = 0;
+                    continue;
+                }
+                if (player->cash - cost < player->cash / 2)
+                {
+                    keepBuilding = 0;
+                    continue;
+                }
+                break;
+            case OPPORTUNISTIC_TRADER:
+                // TODO : in inflation no builings
+                break;
+            }
+
+            player->cash -= cost;
+            board[propertyIndex].buildings++;
+
+            updateRent(&board[propertyIndex]);
+
+            if (board[propertyIndex].buildings == 5)
+            {
+                player->noHotels++;
+
+                printf("%s upgraded %s to a hotel for LKR %d.\n", player->name, board[propertyIndex].name, cost);
+            }
+            else
+            {
+                printf("%s constructed one house (house %d) on %s\n", player->name, board[propertyIndex].buildings ,board[propertyIndex].name);
+                printf("Construction Cost : LKR %d \n" , cost);
+            }
+
+            printf("Remaining Cash : LKR %d\n", player->cash);
+        }
     }
 }

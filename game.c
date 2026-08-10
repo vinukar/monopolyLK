@@ -77,18 +77,18 @@ void runGame(GameState *gameState, BoardSquare board[])
             }
             else
                 movePlayer(players, playerIndex, board, gameState);
-
-            gameState->currentRound++;
+                constructBuildings(players, playerIndex, board, gameState);
         }
+        gameState->currentRound++;
         printf("=============================================\n");
         printf("Round %d Summary\n", gameState->currentRound);
         printf("=============================================\n");
 
         for (int playerIndex = 0; playerIndex < NO_PLAYERS; playerIndex++)
         {
-            printf("%s\n" , players[playerIndex].name);
-            printf("Cash : LKR %d\n",players[playerIndex].cash);
-            printf("Net Worth : LKR %d\n", 111111111);  // TODO : Calculate Net Worth
+            printf("%s\n", players[playerIndex].name);
+            printf("Cash : LKR %d\n", players[playerIndex].cash);
+            printf("Net Worth : LKR %d\n", 111111111); // TODO : Calculate Net Worth
             printf("Properties : %d\n", players[playerIndex].noProperties);
             printf("Hotels : %d\n", players[playerIndex].noHotels);
             printf("Outstanding Loan : LKR %d\n", players[playerIndex].loanAmount);

@@ -91,8 +91,9 @@ typedef struct
 
     int price;
     int currentValue;
-    int houses; // 5 houses = 1 hotel
+    int buildings; // 5 houses = 1 hotel
     int rent;
+    int baseRent;
     int houseValue;
     int hotelValue;
     int mortgageValue;
@@ -110,14 +111,14 @@ void playerInit(Player players[]);
 void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState);
 int payJailBail(Player player, int currentRound);
 int futureRent();
-int auctionBidLimit(Player *player, int marketValue);
 void startAuction(Player players[], BoardSquare *asset);
-int ownsMonopoly(BoardSquare board[], int playerIndex, PropertyGroup group);
-
+int auctionBidLimit(Player *player, int marketValue);
+void constructBuildings(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
 /* board.c */
 void boardInit(BoardSquare board[]);
 void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState);
 void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState, Dice d);
 int railwayRent(BoardSquare board[], int owner);
 int playerAssetCalc(BoardSquare board[], int playerIndex);
+void updateRent(BoardSquare *board);
 #endif

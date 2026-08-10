@@ -6,6 +6,7 @@ static void setPropertyData(BoardSquare board[], int index, PropertyGroup group,
     board[index].group = group;
     board[index].price = purchasePrice;
     board[index].rent = rent;
+    board[index].baseRent = rent;
 }
 
 void boardInit(BoardSquare board[])
@@ -94,8 +95,30 @@ void boardInit(BoardSquare board[])
         BANK,
         PROPERTY};
 
-    board[12].price = UTILITY_PRICE; /* Ceylon Electricity Board */
-    board[28].price = UTILITY_PRICE; /* National Water Supply and Drainage Board */
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        board[i].index = i;
+        board[i].name = squareNames[i];
+        board[i].type = squareTypes[i];
+
+        board[i].group = NO_PROPERTY_GROUP;
+        board[i].owner = -1; // -1 = bank
+
+        board[i].price = 0;
+        board[i].currentValue = 0;
+        board[i].rent = 0;
+
+        board[i].buildings = 0;
+
+        board[i].houseValue = 0;
+        board[i].hotelValue = 0;
+
+        board[i].mortgageValue = 0;
+        board[i].mortgageState = 0;
+    }
+
+    board[12].price = UTILITY_PRICE; // Ceylon Electricity Board
+    board[28].price = UTILITY_PRICE; // National Water Supply and Drainage Board
     board[5].price = RAILWAY_PRICE;
     board[15].price = RAILWAY_PRICE;
     board[25].price = RAILWAY_PRICE;
@@ -126,59 +149,63 @@ void boardInit(BoardSquare board[])
 
     for (int i = 0; i < BOARD_SIZE; i++)
     {
-        board[i].index = i;
-        board[i].name = squareNames[i];
-        board[i].type = squareTypes[i];
-        board[i].owner = -1; //-1 = bank
         board[i].currentValue = board[i].price;
-        board[i].mortgageState = 0;
         board[i].mortgageValue = board[i].price / 2;
         switch (board[i].group)
         {
         case BROWN_GROUP:
             board[i].houseValue = 500;
             board[i].hotelValue = 2000;
+            board[i].mortgageValue = 750;
             break;
 
         case LIGHT_BLUE_GROUP:
             board[i].houseValue = 750;
             board[i].hotelValue = 3000;
+            board[i].mortgageValue = 1250;
             break;
 
         case PINK_GROUP:
             board[i].houseValue = 1000;
             board[i].hotelValue = 4000;
+            board[i].mortgageValue = 1750;
             break;
 
         case ORANGE_GROUP:
             board[i].houseValue = 1250;
             board[i].hotelValue = 5000;
+            board[i].mortgageValue = 2250;
             break;
 
         case RED_GROUP:
             board[i].houseValue = 1500;
             board[i].hotelValue = 6000;
+            board[i].mortgageValue = 2750;
             break;
 
         case YELLOW_GROUP:
             board[i].houseValue = 2000;
             board[i].hotelValue = 8000;
+            board[i].mortgageValue = 3250;
             break;
 
         case GREEN_GROUP:
             board[i].houseValue = 2500;
             board[i].hotelValue = 10000;
+            board[i].mortgageValue = 4000;
             break;
 
         case DARK_BLUE_GROUP:
             board[i].houseValue = 3000;
             board[i].hotelValue = 12000;
+            board[i].mortgageValue = 5000;
             break;
 
         case NO_PROPERTY_GROUP:
         default:
             board[i].houseValue = 0;
             board[i].hotelValue = 0;
+            board[i].mortgageValue = 0;
             break;
         }
     }
@@ -361,8 +388,42 @@ int playerAssetCalc(BoardSquare board[], int playerIndex)
     {
         if (board[i].owner == playerIndex)
         {
-            totalAssets += board[i].price; // change to currentValue
+            totalAssets += board[i].currentValue;
         }
     }
     return totalAssets;
+}
+
+void updateRent(BoardSquare *property)
+{
+    int multiplier;
+
+    switch (property->buildings)
+    {
+    case 1:
+        multiplier = 2;
+        break;
+
+    case 2:
+        multiplier = 3;
+        break;
+
+    case 3:
+        multiplier = 5;
+        break;
+
+    case 4:
+        multiplier = 7;
+        break;
+
+    case 5:
+        multiplier = 10;
+        break;
+
+    default:
+        multiplier = 1;
+        break;
+    }
+
+    property->rent = property->baseRent * multiplier;
 }
