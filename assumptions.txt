@@ -1,5 +1,0 @@
-for Opportunistic Trader - buy utilities in frist 5 rounds for maximum return. buys 2nd utility if 1st utility is owned by him
-
-Turn Order has to be reimplemented.
-
-mortgage value is half of the price
