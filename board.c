@@ -115,6 +115,7 @@ void boardInit(BoardSquare board[])
 
         board[i].mortgageValue = 0;
         board[i].mortgageState = 0;
+        board[i].loanLocked = 0;
     }
 
     board[12].price = UTILITY_PRICE; // Ceylon Electricity Board
@@ -205,7 +206,6 @@ void boardInit(BoardSquare board[])
         default:
             board[i].houseValue = 0;
             board[i].hotelValue = 0;
-            board[i].mortgageValue = 0;
             break;
         }
     }
@@ -230,8 +230,6 @@ void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], G
     }
 
     currentPlayer->position = newPosition;
-    printf("Landed on %s.\n\n", board[newPosition].name);
-
     resolveLanding(players, currentPlayerIndex, board, gameState, d);
 }
 
@@ -346,6 +344,12 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
             printf("%s paid tax of LKR : %d to Community Development Fund\n", currentPlayer->name, tax);
             printf("Remaining Balance: LKR %d\n", currentPlayer->cash);
         }
+        break;
+
+    case BANK:
+
+        printf("%s landed on Bank of Ceylon.\n", currentPlayer->name);
+        bankAction(players, currentPlayerIndex, board, gameState);
         break;
 
     default:

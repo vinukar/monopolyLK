@@ -30,6 +30,10 @@ void playerInit(Player players[])
         players[i].noProperties = 0;
         players[i].noHotels = 0;
         players[i].loanAmount = 0;
+        players[i].loanPrincipal = 0;
+        players[i].loanInterestRate = 0;
+        players[i].loanRoundsRemaining = 0;
+        players[i].bankrupt = 0;
         players[i].roll = rollDice().total;
 
         printf("%s rolls %d\n", players[i].name, players[i].roll);
@@ -50,11 +54,8 @@ void playerInit(Player players[])
                     players[i].roll = rollDice().total;
                     players[j].roll = rollDice().total;
 
-                    printf("Tie between %s and %s.\n",
-                           players[i].name, players[j].name);
-                    printf("Reroll: %s -> %d, %s -> %d\n\n",
-                           players[i].name, players[i].roll,
-                           players[j].name, players[j].roll);
+                    printf("Tie between %s and %s.\n", players[i].name, players[j].name);
+                    printf("Reroll: %s -> %d, %s -> %d\n\n", players[i].name, players[i].roll, players[j].name, players[j].roll);
                 }
             }
         }
@@ -199,7 +200,7 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
 
 int futureRent()
 {
-    //TODO : Add the logic
+    // TODO : Add the logic
     return 0;
 }
 
@@ -243,17 +244,28 @@ int payJailBail(Player player, int currentRound)
 
 void startAuction(Player players[], BoardSquare *asset)
 {
+    if (asset->loanLocked)
+    {
+        printf("Property is Loan Locked\n");
+        return;
+    }
     int highestbid = (asset->currentValue / 2);
     printf("Auction Started.\n");
     printf("Property : %s\n", asset->name);
     printf("Starting Bid : %d\n", highestbid);
 
-    int active[NO_PLAYERS] = {1, 1, 1, 1};
+    int active[NO_PLAYERS] = {0, 0, 0, 0};
     int highestbidder = -1;
-    int activeCount = NO_PLAYERS;
+    int activeCount = 0;
     int bidLimint[NO_PLAYERS] = {0, 0, 0, 0};
     for (int i = 0; i < NO_PLAYERS; i++)
     {
+        if (players[i].bankrupt)
+        {
+            continue;
+        }
+        active[i] = 1;
+        activeCount++;
         bidLimint[i] = auctionBidLimit(&players[i], asset->currentValue);
         if (bidLimint[i] < highestbid)
         {
@@ -462,8 +474,8 @@ void constructBuildings(Player players[], int playerIndex, BoardSquare board[], 
             }
             else
             {
-                printf("%s constructed one house (house %d) on %s\n", player->name, board[propertyIndex].buildings ,board[propertyIndex].name);
-                printf("Construction Cost : LKR %d \n" , cost);
+                printf("%s constructed one house (house %d) on %s\n", player->name, board[propertyIndex].buildings, board[propertyIndex].name);
+                printf("Construction Cost : LKR %d \n", cost);
             }
 
             printf("Remaining Cash : LKR %d\n", player->cash);

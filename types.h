@@ -35,7 +35,12 @@ typedef struct
     int jailTurns;
     int noProperties;
     int noHotels;
+
     int loanAmount;
+    int loanPrincipal;
+    int loanInterestRate;
+    int loanRoundsRemaining;
+    int bankrupt;
 } Player;
 
 typedef struct
@@ -50,6 +55,7 @@ typedef struct
     int currentRound;
     int incomeTaxRate;
     int cdfRate;
+    int loanInterestRate;
 } GameState;
 
 typedef enum
@@ -96,8 +102,11 @@ typedef struct
     int baseRent;
     int houseValue;
     int hotelValue;
+
     int mortgageValue;
     int mortgageState;
+
+    int loanLocked;
 } BoardSquare;
 
 /* game.c */
@@ -121,4 +130,8 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
 int railwayRent(BoardSquare board[], int owner);
 int playerAssetCalc(BoardSquare board[], int playerIndex);
 void updateRent(BoardSquare *board);
+
+/* finance.c */
+void bankAction(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
+void updateLoans(Player players[], BoardSquare board[]);
 #endif
