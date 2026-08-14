@@ -264,6 +264,10 @@ void updateLoans(Player players[], BoardSquare board[])
                     {
                         board[i].buildings = 0;
                         board[i].rent = board[i].baseRent;
+                        board[i].insuranceType = NO_INSURANCE;
+                        board[i].insuranceRoundsRemaining = 0;
+                        board[i].damaged = 0;
+                        board[i].pendingRepairCost = 0;
                     }
                 }
             }
@@ -301,5 +305,160 @@ void updateLoans(Player players[], BoardSquare board[])
                 printf("%s is bankrupt.\n", players[p].name);
             }
         }
+    }
+}
+
+void insuranceAction(Player players[], int playerIndex, BoardSquare board[], GameState *gameState)
+{
+    Player *player = &players[playerIndex];
+
+    if (player->bankrupt)
+    {
+        return;
+    }
+
+    int purchased = 0;
+
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (board[i].owner != playerIndex || board[i].type != PROPERTY || board[i].buildings == 0 )
+        {
+            continue; // to remove iterations for unwanted conditions
+        }
+
+        InsuranceType insurance_type = selectInsuranceType(player, &board[i]);
+
+        if (insurance_type == NO_INSURANCE)
+        {
+            continue;
+        }
+
+        if (board[i].insuranceType == insurance_type && board[i].insuranceRoundsRemaining > 3)
+        {
+            continue; // Policy is already active and is not close to expiration.
+        }
+
+        int premiumRate;
+        const char *policyName;
+
+        switch (insurance_type)
+        {
+        case BASIC_INSURANCE:
+            premiumRate = 5;
+            policyName = "Basic Property Insurance";
+            break;
+
+        case COMPREHENSIVE_INSURANCE:
+            premiumRate = 10;
+            policyName = "Comprehensive Insurance";
+            break;
+
+        case BUSINESS_INTERRUPTION_INSURANCE:
+            premiumRate = 15;
+            policyName = "Business Interruption Insurance";
+            break;
+        }
+
+        int premium = percentageCalc(board[i].currentValue, premiumRate);
+
+        premium = percentageCalc(premium, gameState->insuranceModifier);
+
+        if (player->cash < premium)
+        {
+            continue;
+        }
+
+        player->cash -= premium;
+        board[i].insuranceType = insurance_type;
+        board[i].insuranceRoundsRemaining = 20;
+
+        printf("%s purchased.\n", policyName);
+        printf("Property : %s\n", board[i].name);
+        printf("Premium : LKR %d\n", premium);
+
+        purchased = 1;
+    }
+
+    if (purchased == 0)
+    {
+        printf("%s performs no insurance transaction.\n", player->name);
+    }
+    else
+    {
+        printf("Remaining Cash : LKR %d\n", player->cash);
+    }
+}
+
+void updateInsurance(Player players[], BoardSquare board[])
+{
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (board[i].insuranceType != NO_INSURANCE)
+        {
+            board[i].insuranceRoundsRemaining--;
+
+            if (board[i].insuranceRoundsRemaining == 3)
+            {
+                printf("Insurance policy on %s expires in 3 rounds.\n", board[i].name);
+            }
+
+            if (board[i].insuranceRoundsRemaining == 0)
+            {
+                printf("Insurance policy on %s has expired.\n", board[i].name);
+                board[i].insuranceType = NO_INSURANCE;
+                board[i].insuranceRoundsRemaining = -1;
+            }
+        }
+    }
+}
+
+void InsuranceClaim(Player players[], BoardSquare *property, DisasterType disaster, int repairCost)
+{
+    Player *player = &players[property->owner];
+    int claim = 0;
+    int covered = 0;
+
+    switch (property->insuranceType)
+    {
+    case BASIC_INSURANCE:
+
+        if (disaster == FIRE || disaster == FLOOD)
+        {
+            claim = percentageCalc(repairCost, 80);
+            covered = 1;
+        }
+
+        break;
+
+    case COMPREHENSIVE_INSURANCE:
+
+        if (disaster == FIRE || disaster == FLOOD || disaster == RIOT || disaster == VANDALISM || disaster == EARTHQUAKE)
+        {
+            claim = repairCost;
+            covered = 1;
+        }
+
+        break;
+
+    case BUSINESS_INTERRUPTION_INSURANCE:
+
+        int lostRentalIncome = property->rent * 5;
+        claim = repairCost + lostRentalIncome; // Lost hotel rental income for five rounds.
+        covered = 1;
+
+        break;
+
+    case NO_INSURANCE:
+    default:
+        break;
+    }
+
+    if (covered)
+    {
+        player->cash += claim;
+
+        printf("Insurance Claim Approved.\n");
+        printf("Property : %s\n", property->name);
+        printf("Compensation Paid : LKR %d\n", claim);
     }
 }

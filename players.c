@@ -34,6 +34,7 @@ void playerInit(Player players[])
         players[i].loanInterestRate = 0;
         players[i].loanRoundsRemaining = 0;
         players[i].bankrupt = 0;
+        players[i].experiencedFinancialLoss = 0;
         players[i].roll = rollDice().total;
 
         printf("%s rolls %d\n", players[i].name, players[i].roll);
@@ -277,8 +278,7 @@ void startAuction(Player players[], BoardSquare *asset)
 
     if (activeCount == 0)
     {
-        printf("No player bids. %s remains with the Bank.\n",
-               asset->name);
+        printf("No player bids. %s remains with the Bank.\n", asset->name);
         return;
     }
 
@@ -315,16 +315,16 @@ void startAuction(Player players[], BoardSquare *asset)
                 printf("%s withdraws.\n", players[i].name);
             }
 
-            if (activeCount == 1)
+            if (activeCount == 1 && highestbidder != -1)
             {
                 break;
             }
         }
     }
     asset->owner = highestbidder;
-    players[highestbidder].cash -= highestbid;
+    players[highestbidder].cash -= (highestbid - AUCTION_INCREMENT);
     printf("%s wins the auction.\n", players[highestbidder].name);
-    printf("%s purchased %s for LKR : %d\n", players[highestbidder].name, asset->name, highestbid);
+    printf("%s purchased %s for LKR : %d\n", players[highestbidder].name, asset->name, highestbid-AUCTION_INCREMENT);
     printf("Remaining Balance : LKR %d\n", players[highestbidder].cash);
 }
 
@@ -481,4 +481,62 @@ void constructBuildings(Player players[], int playerIndex, BoardSquare board[], 
             printf("Remaining Cash : LKR %d\n", player->cash);
         }
     }
+}
+
+InsuranceType selectInsuranceType(Player *player, BoardSquare *property)
+{
+    InsuranceType insuranceType = NO_INSURANCE;
+
+    switch (player->strategy)
+    {
+    case AGGRESSIVE_INVESTOR:
+
+        if (property->buildings < 5)
+        {
+            insuranceType = BASIC_INSURANCE;
+        }
+        else
+        {
+            insuranceType = COMPREHENSIVE_INSURANCE;
+        }
+
+        break;
+
+    case CONSERVATIVE_BANKER:
+
+        insuranceType = COMPREHENSIVE_INSURANCE;
+        break;
+
+    case RISK_TAKER:
+
+        if (player->experiencedFinancialLoss == 0)
+        {
+            return NO_INSURANCE;
+        }
+
+        if (property->buildings == 5)
+        {
+            insuranceType = BUSINESS_INTERRUPTION_INSURANCE;
+        }
+        else
+        {
+            insuranceType = COMPREHENSIVE_INSURANCE;
+        }
+
+        break;
+
+    case OPPORTUNISTIC_TRADER:
+
+        if (property->currentValue >= 6500)
+        {
+            insuranceType = COMPREHENSIVE_INSURANCE;
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    return insuranceType;
 }

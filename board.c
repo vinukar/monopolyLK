@@ -116,6 +116,11 @@ void boardInit(BoardSquare board[])
         board[i].mortgageValue = 0;
         board[i].mortgageState = 0;
         board[i].loanLocked = 0;
+
+        board[i].insuranceType = NO_INSURANCE;
+        board[i].insuranceRoundsRemaining = -1;
+        board[i].damaged = 0;
+        board[i].pendingRepairCost = 0;
     }
 
     board[12].price = UTILITY_PRICE; // Ceylon Electricity Board
@@ -211,10 +216,9 @@ void boardInit(BoardSquare board[])
     }
 }
 
-void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState)
+void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState, Dice d)
 {
     Player *currentPlayer = &players[currentPlayerIndex];
-    Dice d = rollDice();
     int oldPosition = currentPlayer->position;
     int newPosition = (oldPosition + d.total) % BOARD_SIZE;
 
@@ -350,6 +354,12 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
 
         printf("%s landed on Bank of Ceylon.\n", currentPlayer->name);
         bankAction(players, currentPlayerIndex, board, gameState);
+        break;
+
+    case INSURANCE:
+
+        printf("%s landed on %s.\n", currentPlayer->name, currentSquare->name);
+        insuranceAction(players, currentPlayerIndex, board, gameState);
         break;
 
     default:

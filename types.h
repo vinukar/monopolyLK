@@ -41,6 +41,7 @@ typedef struct
     int loanInterestRate;
     int loanRoundsRemaining;
     int bankrupt;
+    int experiencedFinancialLoss; // for risk taker insurance
 } Player;
 
 typedef struct
@@ -56,6 +57,7 @@ typedef struct
     int incomeTaxRate;
     int cdfRate;
     int loanInterestRate;
+    int insuranceModifier;
 } GameState;
 
 typedef enum
@@ -86,6 +88,25 @@ typedef enum
     DARK_BLUE_GROUP
 } PropertyGroup;
 
+typedef enum
+{
+    FIRE,
+    FLOOD,
+    RIOT,
+    VANDALISM, //insurance
+    EARTHQUAKE, //insurance
+    BUILDING_COLLAPSE,
+    ELECTRICAL_FAILURE
+} DisasterType;
+
+typedef enum
+{
+    NO_INSURANCE,
+    BASIC_INSURANCE,
+    COMPREHENSIVE_INSURANCE,
+    BUSINESS_INTERRUPTION_INSURANCE
+} InsuranceType;
+
 typedef struct
 {
     int index;
@@ -107,6 +128,12 @@ typedef struct
     int mortgageState;
 
     int loanLocked;
+
+    InsuranceType insuranceType;
+    int insuranceRoundsRemaining;
+
+    int damaged;
+    int pendingRepairCost;
 } BoardSquare;
 
 /* game.c */
@@ -123,9 +150,11 @@ int futureRent();
 void startAuction(Player players[], BoardSquare *asset);
 int auctionBidLimit(Player *player, int marketValue);
 void constructBuildings(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
+InsuranceType selectInsuranceType(Player *player, BoardSquare *property);
+
 /* board.c */
 void boardInit(BoardSquare board[]);
-void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState);
+void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState, Dice d);
 void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState, Dice d);
 int railwayRent(BoardSquare board[], int owner);
 int playerAssetCalc(BoardSquare board[], int playerIndex);
@@ -134,4 +163,10 @@ void updateRent(BoardSquare *board);
 /* finance.c */
 void bankAction(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
 void updateLoans(Player players[], BoardSquare board[]);
+void insuranceAction(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
+void InsuranceClaim(Player players[],BoardSquare *property,DisasterType disaster,int repairCost);
+void updateInsurance(Player players[],BoardSquare board[]);
+
+/* events.c */
+void randomDisaster(Player players[], BoardSquare board[]);
 #endif
