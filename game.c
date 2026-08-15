@@ -27,10 +27,19 @@ int percentageCalc(int amount, int rate)
     return (amount * rate + 50) / 100; // add 50 to round up
 }
 
+void gameInit(GameState *gameState, BoardSquare board[], Player players[])
+{
+    boardInit(board);
+    gameStateInit(gameState);
+    playerInit(players);
+}
+
 void runGame(GameState *gameState, BoardSquare board[])
 {
+    //all initializations
+    
     Player players[NO_PLAYERS];
-    playerInit(players);
+    gameInit(gameState, board, players);
 
     for (int round = 0; round < MAX_ROUNDS; round++)
     {
@@ -81,7 +90,14 @@ void runGame(GameState *gameState, BoardSquare board[])
         }
         updateLoans(players, board);
         updateInsurance(players, board);
+        applyActiveEvents(players, board, gameState);
         gameState->currentRound++;
+        
+        if (gameState->currentRound % 10 == 0)
+        {
+            applyInflation(gameState, board);
+        }
+        
         printf("=============================================\n");
         printf("Round %d Summary\n", gameState->currentRound);
         printf("=============================================\n");

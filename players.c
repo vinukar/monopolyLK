@@ -23,7 +23,6 @@ void playerInit(Player players[])
         players[i].name = playerNames[i];
         players[i].cash = START_CASH;
         players[i].position = 0;
-        // players[i].order = i;
         players[i].strategy = (PlayerStrategy)i;
         players[i].jailed = 0;
         players[i].jailTurns = 0;
@@ -35,6 +34,8 @@ void playerInit(Player players[])
         players[i].loanRoundsRemaining = 0;
         players[i].bankrupt = 0;
         players[i].experiencedFinancialLoss = 0;
+        players[i].activeEvent = NO_EVENT;
+        players[i].eventRoundsRemaining = 0;
         players[i].roll = rollDice().total;
 
         printf("%s rolls %d\n", players[i].name, players[i].roll);
@@ -241,6 +242,7 @@ int payJailBail(Player player, int currentRound)
 
         break;
     }
+    return 0;
 }
 
 void startAuction(Player players[], BoardSquare *asset)
@@ -324,7 +326,7 @@ void startAuction(Player players[], BoardSquare *asset)
     asset->owner = highestbidder;
     players[highestbidder].cash -= (highestbid - AUCTION_INCREMENT);
     printf("%s wins the auction.\n", players[highestbidder].name);
-    printf("%s purchased %s for LKR : %d\n", players[highestbidder].name, asset->name, highestbid-AUCTION_INCREMENT);
+    printf("%s purchased %s for LKR : %d\n", players[highestbidder].name, asset->name, highestbid - AUCTION_INCREMENT);
     printf("Remaining Balance : LKR %d\n", players[highestbidder].cash);
 }
 
@@ -365,6 +367,12 @@ int auctionBidLimit(Player *player, int marketValue)
 void constructBuildings(Player players[], int playerIndex, BoardSquare board[], GameState *gameState)
 {
     Player *player = &players[playerIndex];
+
+    if (player->activeEvent == LABOUR_STRIKE)
+    {
+        printf("%s cannot build — Labour Strike is in effect (%d rounds remaining).\n", player->name, player->eventRoundsRemaining);
+        return;
+    }
 
     for (int group = 0; group <= 8; group++)
     {
@@ -426,6 +434,15 @@ void constructBuildings(Player players[], int playerIndex, BoardSquare board[], 
             else
             {
                 cost = board[propertyIndex].hotelValue;
+            }
+
+            if (player->activeEvent == HOUSING_SUBSIDY)
+            {
+                cost = cost - percentageCalc(cost, 30);
+            }
+            else if (player->activeEvent == CURRENCY_DEPRECIATION)
+            {
+                cost = cost + percentageCalc(cost, 10);
             }
 
             if (player->cash < cost)

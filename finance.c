@@ -321,7 +321,7 @@ void insuranceAction(Player players[], int playerIndex, BoardSquare board[], Gam
 
     for (int i = 0; i < BOARD_SIZE; i++)
     {
-        if (board[i].owner != playerIndex || board[i].type != PROPERTY || board[i].buildings == 0 )
+        if (board[i].owner != playerIndex || board[i].type != PROPERTY || board[i].buildings == 0)
         {
             continue; // to remove iterations for unwanted conditions
         }
@@ -356,6 +356,12 @@ void insuranceAction(Player players[], int playerIndex, BoardSquare board[], Gam
         case BUSINESS_INTERRUPTION_INSURANCE:
             premiumRate = 15;
             policyName = "Business Interruption Insurance";
+            break;
+
+        case NO_INSURANCE:
+        default:
+            premiumRate = 0;
+            policyName = "None";
             break;
         }
 
@@ -460,5 +466,21 @@ void InsuranceClaim(Player players[], BoardSquare *property, DisasterType disast
         printf("Insurance Claim Approved.\n");
         printf("Property : %s\n", property->name);
         printf("Compensation Paid : LKR %d\n", claim);
+    }
+
+    if (player->cash >= repairCost)
+    {
+        player->cash -= repairCost;
+        printf("%s repaired the property.\n", player->name);
+        printf("Remaining Balance : LKR %d\n", player->cash);
+    }
+    else
+    {
+        printf("%s cannot afford to repair %s.\n", player->name, property->name);
+        printf("%s cannot collect rent until repaired.\n", player->name);
+        property->damaged = 1;
+        property->pendingRepairCost = repairCost;
+
+        //TODO: Add a way to pay the repair cost
     }
 }

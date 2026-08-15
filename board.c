@@ -257,7 +257,7 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
         }
         else
         {
-            if (currentSquare->mortgageState == 0)
+            if (currentSquare->mortgageState == 0 )
             {
                 printf("%s landed on %s.\n", currentPlayer->name, currentSquare->name);
                 int rent = currentSquare->rent;
@@ -308,7 +308,7 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
         else
         {
             printf("%s landed on %s.\n", currentPlayer->name, currentSquare->name);
-            int rent = railwayRent(board, currentSquare->owner);
+            int rent = railwayRent(board, players[currentPlayerIndex]);
             currentPlayer->cash -= rent;
             players[currentSquare->owner].cash += rent;
             printf("Rent Paid : LKR %d\n", rent);
@@ -355,6 +355,11 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
             printf("%s paid tax of LKR : %d to Community Development Fund\n", currentPlayer->name, tax);
             printf("Remaining Balance: LKR %d\n", currentPlayer->cash);
         }
+        else
+        {
+            printf("%s landed on National Event Card.\n", currentPlayer->name);
+            drawEventCard(&gameState->eventDeck, players, currentPlayerIndex, board, gameState);
+        }
         break;
 
     case BANK:
@@ -374,32 +379,34 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
     }
 }
 
-int railwayRent(BoardSquare board[], int owner)
+int railwayRent(BoardSquare board[], Player player)
 {
+    int multiplier = 1 ;
+    if (player.activeEvent == FUEL_SHORTAGE){
+        multiplier = 2;
+    }
     int count = 0;
     for (int i = 5; i < 36; i += 10)
     {
-        if (board[i].owner == owner)
+        if (board[i].owner == player.order)
             count++;
     }
     switch (count)
     {
     case 1:
-        return 250;
+        return 250 * multiplier;
         break;
     case 2:
-        return 500;
+        return 500 * multiplier;
         break;
     case 3:
-        return 1000;
+        return 1000 * multiplier;
         break;
     case 4:
-        return 2000;
-        break;
-    default:
-        return 0;
+        return 2000 * multiplier;
         break;
     }
+    return 0;
 }
 
 int playerAssetCalc(BoardSquare board[], int playerIndex)
