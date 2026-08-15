@@ -150,7 +150,7 @@ int futureRent();
 void startAuction(Player players[], BoardSquare *asset);
 int auctionBidLimit(Player *player, int marketValue);
 void constructBuildings(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
-InsuranceType selectInsuranceType(Player *player, BoardSquare *property);
+InsuranceType selectInsurance(Player *player, BoardSquare *property);
 
 /* board.c */
 void boardInit(BoardSquare board[]);

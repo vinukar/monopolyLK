@@ -366,7 +366,7 @@ void constructBuildings(Player players[], int playerIndex, BoardSquare board[], 
 {
     Player *player = &players[playerIndex];
 
-    for (int group = 0; group <= 7; group++)
+    for (int group = 0; group <= 8; group++)
     {
         int totalProperties = 0;
         int ownedProperties = 0;
@@ -483,7 +483,7 @@ void constructBuildings(Player players[], int playerIndex, BoardSquare board[], 
     }
 }
 
-InsuranceType selectInsuranceType(Player *player, BoardSquare *property)
+InsuranceType selectInsurance(Player *player, BoardSquare *property)
 {
     InsuranceType insuranceType = NO_INSURANCE;
 

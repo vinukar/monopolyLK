@@ -326,7 +326,7 @@ void insuranceAction(Player players[], int playerIndex, BoardSquare board[], Gam
             continue; // to remove iterations for unwanted conditions
         }
 
-        InsuranceType insurance_type = selectInsuranceType(player, &board[i]);
+        InsuranceType insurance_type = selectInsurance(player, &board[i]);
 
         if (insurance_type == NO_INSURANCE)
         {

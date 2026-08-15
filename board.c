@@ -257,13 +257,20 @@ void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[
         }
         else
         {
-            printf("%s landed on %s.\n", currentPlayer->name, currentSquare->name);
-            int rent = currentSquare->rent;
-            currentPlayer->cash -= rent;
-            players[currentSquare->owner].cash += rent;
-            printf("Rent Paid : LKR %d\n", rent);
-            printf("Owner : %s\n", players[currentSquare->owner].name);
-            printf("Remaining Balance : LKR %d\n", currentPlayer->cash);
+            if (currentSquare->mortgageState == 0)
+            {
+                printf("%s landed on %s.\n", currentPlayer->name, currentSquare->name);
+                int rent = currentSquare->rent;
+                currentPlayer->cash -= rent;
+                players[currentSquare->owner].cash += rent;
+                printf("Rent Paid : LKR %d\n", rent);
+                printf("Owner : %s\n", players[currentSquare->owner].name);
+                printf("Remaining Balance : LKR %d\n", currentPlayer->cash);
+            }
+            else
+            {
+                printf("Property is mortaged. No rent Collected.");
+            }
         }
         break;
 
