@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "types.h"
 
-void initEventDeck(EventDeck *deck)
+void eventDeckInit(EventDeck *deck)
 {
     int i, j, temp;
 
@@ -10,7 +10,7 @@ void initEventDeck(EventDeck *deck)
     {
         deck->cards[i] = i;
     }
-    // Fisher–Yates shuffle
+    // Fisher–Yates shuffle to randomize the card deck
     for (i = EVENT_DECK_SIZE - 1; i > 0; i--)
     {
         j = rand() % (i + 1);
@@ -112,11 +112,10 @@ void drawEventCard(EventDeck *deck, Player players[], int currentPlayerIndex, Bo
     {
 
     case TOURISM_HYPE:
-        printf("Event : Tourism Hype!\n");
-        printf("Hotels earn double rent for %s for 5 rounds.\n", currentPlayer->name);
-
+        printf("Tourism Hype!\n");
+        printf("Hotels earn double rent for 5 rounds.\n");
         currentPlayer->activeEvent = TOURISM_HYPE;
-        currentPlayer->eventRoundsRemaining = 5;
+        currentPlayer->eventRoundsRemaining = 6;
 
         for (int i = 0; i < BOARD_SIZE; i++)
         {
@@ -128,10 +127,10 @@ void drawEventCard(EventDeck *deck, Player players[], int currentPlayerIndex, Bo
         break;
 
     case FUEL_SHORTAGE:
-        printf("Event : Fuel Shortage!\n");
-        printf("Railway rent doubles for %s for 5 rounds.\n", currentPlayer->name);
+        printf("Fuel Shortage!\n");
+        printf("Railway rent doubles for 5 rounds.\n");
         currentPlayer->activeEvent = FUEL_SHORTAGE;
-        currentPlayer->eventRoundsRemaining = 5;
+        currentPlayer->eventRoundsRemaining = 6;
         break;
 
     case HEAVY_FLOODS:
@@ -190,7 +189,7 @@ void drawEventCard(EventDeck *deck, Player players[], int currentPlayerIndex, Bo
             board[randomIndex].damaged = 1;
             board[randomIndex].pendingRepairCost = -2244; // value to recognise this happens by event
             currentPlayer->activeEvent = POLITICAL_RALLY;
-            currentPlayer->eventRoundsRemaining = 2;
+            currentPlayer->eventRoundsRemaining = 3;
 
             printf("%shas been closed for 2 rounds.\n", board[randomIndex].name);
             printf("Reopens in 2 rounds.\n");
@@ -235,26 +234,23 @@ void drawEventCard(EventDeck *deck, Player players[], int currentPlayerIndex, Bo
 
     case INTEREST_RATE_CUT:
         printf("Interest Rate Cut!\n");
-        printf("Loan interest rate reduced by 2%%.\n");
-
+        printf("Loan interest reduced by 2%%.\n");
         gameState->loanInterestRate -= 2;
+        if (gameState->loanInterestRate < 0)
+            gameState->loanInterestRate = 0;
         printf("New Interest Rate : %d%%\n", gameState->loanInterestRate);
-
         currentPlayer->activeEvent = INTEREST_RATE_CUT;
-        currentPlayer->eventRoundsRemaining = 15;
+        currentPlayer->eventRoundsRemaining = 16;
         break;
 
     case INTEREST_RATE_INCREASE:
         printf("Interest Rate Increase!\n");
-        printf("Loan interest rate increased by 2%%.\n");
-
+        printf("Loan interest increased by 2%%.\n");
         gameState->loanInterestRate += 2;
         printf("New Interest Rate : %d%%\n", gameState->loanInterestRate);
-
         currentPlayer->activeEvent = INTEREST_RATE_INCREASE;
-        currentPlayer->eventRoundsRemaining = 15;
+        currentPlayer->eventRoundsRemaining = 16;
         break;
-        // TODO : loan interest rate reduction per player
 
     case TAX_AMNESTY:
         printf("Tax Amnesty!\n");
@@ -272,12 +268,9 @@ void drawEventCard(EventDeck *deck, Player players[], int currentPlayerIndex, Bo
 
     case POWER_FAILURE:
         printf("Power Failure!\n");
-        printf("Utility income halved for %s for 3 rounds.\n", currentPlayer->name);
-
+        printf("Utility income halved for 3 rounds.\n");
         currentPlayer->activeEvent = POWER_FAILURE;
-        currentPlayer->eventRoundsRemaining = 3;
-
-        // TODO implement this
+        currentPlayer->eventRoundsRemaining = 4;
         break;
 
     case FOREIGN_FUNDING:
@@ -325,9 +318,9 @@ void drawEventCard(EventDeck *deck, Player players[], int currentPlayerIndex, Bo
 
     case LABOUR_STRIKE:
         printf("Labour Strike!\n");
-        printf("Construction suspended for %s for 2 rounds.\n", currentPlayer->name);
+        printf("Construction suspended for 2 rounds.\n");
         currentPlayer->activeEvent = LABOUR_STRIKE;
-        currentPlayer->eventRoundsRemaining = 2;
+        currentPlayer->eventRoundsRemaining = 3;
         break;
 
     case INSURANCE_DISCOUNT:
@@ -455,12 +448,11 @@ void applyActiveEvents(Player players[], BoardSquare board[], GameState *gameSta
                         board[i].pendingRepairCost = 0;
                         printf("%s is now open again.\n", board[i].name);
                     }
-                    // TODO : no rent when closed
                 }
                 break;
 
             case HOUSING_SUBSIDY:
-                // TODO : house construction cost reduction by 30%
+
                 printf("Housing Subsidy ended. Construction costs return to normal.\n");
                 break;
 
@@ -556,86 +548,85 @@ void applyInflation(GameState *gameState, BoardSquare board[])
         }
     }
 
-    gameState->loanInterestRate += rate;
-    // TODO add repair cost , insurance cost
+    gameState->loanInterestRate += percentageCalc(gameState->loanInterestRate, rate);
 }
 
 void applyRegionalEvents(GameState *gameState, BoardSquare board[])
 {
+    if (gameState->regionalEventRoundsRemaining > 0)
+    {
+        gameState->regionalEventRoundsRemaining--;
+    }
+
     if (gameState->activeRegionalEvent != NO_REGIONAL_EVENT && gameState->regionalEventRoundsRemaining == 0)
     {
         switch (gameState->activeRegionalEvent)
         {
         case SOUTHERN_TOURISM_BOOM:
-            board[26].rent -= percentageCalc(board[26].rent, 40);
-            board[27].rent -= percentageCalc(board[27].rent, 40);
-            board[29].rent -= percentageCalc(board[29].rent, 40);
+            board[26].rent = reversePercentageAdd(board[26].rent, 40);
+            board[27].rent = reversePercentageAdd(board[27].rent, 40);
+            board[29].rent = reversePercentageAdd(board[29].rent, 40);
             break;
         case PORT_CITY_EXPANSION:
-            board[1].currentValue -= percentageCalc(board[1].currentValue, 25);
-            board[3].currentValue -= percentageCalc(board[3].currentValue, 25);
-            board[5].currentValue -= percentageCalc(board[5].currentValue, 25);
+            board[1].currentValue = reversePercentageAdd(board[1].currentValue, 25);
+            board[3].currentValue = reversePercentageAdd(board[3].currentValue, 25);
+            board[5].currentValue = reversePercentageAdd(board[5].currentValue, 25);
             break;
         case IT_INDUSTRY_GROWTH:
-            board[13].currentValue -= percentageCalc(board[13].currentValue, 20);
-            board[11].currentValue -= percentageCalc(board[11].currentValue, 20);
-            board[14].currentValue -= percentageCalc(board[14].currentValue, 20);
+            board[13].currentValue = reversePercentageAdd(board[13].currentValue, 20);
+            board[11].currentValue = reversePercentageAdd(board[11].currentValue, 20);
+            board[14].currentValue = reversePercentageAdd(board[14].currentValue, 20);
             break;
         case NORTHERN_DEVELOPMENT_PROGRAMME:
-            board[31].currentValue -= percentageCalc(board[31].currentValue, 30);
-            board[32].currentValue -= percentageCalc(board[32].currentValue, 30);
-            board[34].currentValue -= percentageCalc(board[34].currentValue, 30);
+            board[31].currentValue = reversePercentageAdd(board[31].currentValue, 30);
+            board[32].currentValue = reversePercentageAdd(board[32].currentValue, 30);
+            board[34].currentValue = reversePercentageAdd(board[34].currentValue, 30);
             break;
         case TEA_EXPORT_BOOM:
-            board[37].currentValue -= percentageCalc(board[37].currentValue, 35);
+            board[37].currentValue = reversePercentageAdd(board[37].currentValue, 35);
             break;
         case AIRPORT_EXPANSION:
-            board[16].rent -= percentageCalc(board[16].rent, 30);
-            board[18].rent -= percentageCalc(board[18].rent, 30);
-            board[19].rent -= percentageCalc(board[19].rent, 30);
+            board[16].rent = reversePercentageAdd(board[16].rent, 30);
+            board[18].rent = reversePercentageAdd(board[18].rent, 30);
+            board[19].rent = reversePercentageAdd(board[19].rent, 30);
             break;
         case UNIVERSITY_CITY_GROWTH:
-            board[23].currentValue -= percentageCalc(board[23].currentValue, 20);
-            board[21].currentValue -= percentageCalc(board[21].currentValue, 20);
+            board[23].currentValue = reversePercentageAdd(board[23].currentValue, 20);
+            board[21].currentValue = reversePercentageAdd(board[21].currentValue, 20);
             break;
         case BEACH_POLLUTION:
-            board[26].rent += percentageCalc(board[26].rent, 30);
-            board[27].rent += percentageCalc(board[27].rent, 30);
-            board[29].rent += percentageCalc(board[29].rent, 30);
+            board[26].rent = reversePercentageSub(board[26].rent, 30);
+            board[27].rent = reversePercentageSub(board[27].rent, 30);
+            board[29].rent = reversePercentageSub(board[29].rent, 30);
             break;
         case FLOOD_DAMAGE_REGIONAL:
-            board[26].currentValue += percentageCalc(board[26].currentValue, 20);
-            board[27].currentValue += percentageCalc(board[27].currentValue, 20);
-            board[29].currentValue += percentageCalc(board[29].currentValue, 20);
-            board[16].currentValue += percentageCalc(board[16].currentValue, 20);
-            board[18].currentValue += percentageCalc(board[18].currentValue, 20);
-            board[19].currentValue += percentageCalc(board[19].currentValue, 20);
+            board[26].currentValue = reversePercentageSub(board[26].currentValue, 20);
+            board[27].currentValue = reversePercentageSub(board[27].currentValue, 20);
+            board[29].currentValue = reversePercentageSub(board[29].currentValue, 20);
+            board[16].currentValue = reversePercentageSub(board[16].currentValue, 20);
+            board[18].currentValue = reversePercentageSub(board[18].currentValue, 20);
+            board[19].currentValue = reversePercentageSub(board[19].currentValue, 20);
             break;
         case TRANSPORT_STRIKE_REGIONAL:
-            board[5].rent += percentageCalc(board[5].rent, 40);
-            board[15].rent += percentageCalc(board[15].rent, 40);
-            board[25].rent += percentageCalc(board[25].rent, 40);
-            board[35].rent += percentageCalc(board[35].rent, 40);
+            board[5].rent = reversePercentageSub(board[5].rent, 40);
+            board[15].rent = reversePercentageSub(board[15].rent, 40);
+            board[25].rent = reversePercentageSub(board[25].rent, 40);
+            board[35].rent = reversePercentageSub(board[35].rent, 40);
             break;
         case ELECTRICITY_TARIFF_INCREASE:
-            board[12].rent -= percentageCalc(board[12].rent, 25);
-            board[28].rent -= percentageCalc(board[28].rent, 25);
+            board[12].rent = reversePercentageAdd(board[12].rent, 25);
+            board[28].rent = reversePercentageAdd(board[28].rent, 25);
             break;
         case WATER_SHORTAGE:
-            board[28].rent -= percentageCalc(board[28].rent, 20);
-            board[27].currentValue += percentageCalc(board[27].currentValue, 10);
-            board[29].currentValue += percentageCalc(board[29].currentValue, 10);
+            board[28].rent = reversePercentageAdd(board[28].rent, 20);
+            board[27].currentValue = reversePercentageSub(board[27].currentValue, 10);
+            board[29].currentValue = reversePercentageSub(board[29].currentValue, 10);
             break;
         default:
             break;
         }
         gameState->activeRegionalEvent = NO_REGIONAL_EVENT;
         printf("\nRegional Development Event Expired\n");
-    }
-
-    if (gameState->regionalEventRoundsRemaining > 0)
-    {
-        gameState->regionalEventRoundsRemaining--;
     }
 
     if (gameState->currentRound > 0 && gameState->currentRound % 15 == 0)
@@ -739,7 +730,7 @@ void displayMarketConditions(GameState *gameState)
         printf("Property Group %d (+20%%)\n", gameState->activeMarketBoom);
         printf("Rounds Remaining : %d\n\n", gameState->marketBoomRounds);
     }
-    
+
     if (gameState->activeMarketDecline != NO_PROPERTY_GROUP)
     {
         printf("Market Decline\n");
@@ -752,35 +743,48 @@ void displayMarketConditions(GameState *gameState)
     {
         printf("Regional Development\n");
         printf("-----------------------\n");
-        
+
         switch (gameState->activeRegionalEvent)
         {
         case SOUTHERN_TOURISM_BOOM:
-            printf("Southern Tourism Boom\n(+40%%)\n"); break;
+            printf("Southern Tourism Boom\n(+40%%)\n");
+            break;
         case PORT_CITY_EXPANSION:
-            printf("Port City Expansion\n(+25%%)\n"); break;
+            printf("Port City Expansion\n(+25%%)\n");
+            break;
         case IT_INDUSTRY_GROWTH:
-            printf("IT Industry Growth\n(+20%%)\n"); break;
+            printf("IT Industry Growth\n(+20%%)\n");
+            break;
         case NORTHERN_DEVELOPMENT_PROGRAMME:
-            printf("Northern Development Programme\n(+30%%)\n"); break;
+            printf("Northern Development Programme\n(+30%%)\n");
+            break;
         case TEA_EXPORT_BOOM:
-            printf("Tea Export Boom\n(+35%%)\n"); break;
+            printf("Tea Export Boom\n(+35%%)\n");
+            break;
         case AIRPORT_EXPANSION:
-            printf("Airport Expansion\n(+30%%)\n"); break;
+            printf("Airport Expansion\n(+30%%)\n");
+            break;
         case UNIVERSITY_CITY_GROWTH:
-            printf("University City Growth\n(+20%%)\n"); break;
+            printf("University City Growth\n(+20%%)\n");
+            break;
         case BEACH_POLLUTION:
-            printf("Beach Pollution\n(-30%%)\n"); break;
+            printf("Beach Pollution\n(-30%%)\n");
+            break;
         case FLOOD_DAMAGE_REGIONAL:
-            printf("Flood Damage\n(-20%%)\n"); break;
+            printf("Flood Damage\n(-20%%)\n");
+            break;
         case TRANSPORT_STRIKE_REGIONAL:
-            printf("Transport Strike\n(-40%%)\n"); break;
+            printf("Transport Strike\n(-40%%)\n");
+            break;
         case ELECTRICITY_TARIFF_INCREASE:
-            printf("Electricity Tariff Increase\n(+25%%)\n"); break;
+            printf("Electricity Tariff Increase\n(+25%%)\n");
+            break;
         case WATER_SHORTAGE:
-            printf("Water Shortage\n(+20%%)\n"); break;
+            printf("Water Shortage\n(+20%%)\n");
+            break;
         default:
-            printf("Unknown Regional Event\n"); break;
+            printf("Unknown Regional Event\n");
+            break;
         }
 
         printf("Rounds Remaining : %d\n\n", gameState->regionalEventRoundsRemaining);
@@ -794,4 +798,217 @@ void displayMarketConditions(GameState *gameState)
     printf("-----------------------\n");
     printf("%d%%\n", gameState->loanInterestRate);
     printf("=========================================\n");
+}
+
+void applyDynamicPropertyMarket(GameState *gameState, BoardSquare board[])
+{
+    printf("\n--- Dynamic Property Market Review ---\n");
+
+    // Select Market Boom
+    int boomGroup = -1;
+    for (int attempts = 0; attempts < 100; attempts++)
+    {
+        int r = rand() % 8; // Groups 0 to 7
+        if (gameState->marketBoomCooldown[r] == 0)
+        {
+            boomGroup = r;
+            break;
+        }
+    }
+
+    if (boomGroup != -1)
+    {
+        gameState->activeMarketBoom = boomGroup;
+        gameState->marketBoomRounds = 10;
+        gameState->marketBoomCooldown[boomGroup] = 30;
+
+        printf("Market Boom begins for Property Group %d! (10 rounds)\n", boomGroup);
+
+        for (int i = 0; i < BOARD_SIZE; i++)
+        {
+            if (board[i].type == PROPERTY && board[i].group == boomGroup)
+            {
+                board[i].price += percentageCalc(board[i].price, 15);
+                board[i].mortgageValue += percentageCalc(board[i].mortgageValue, 15);
+                board[i].baseRent += percentageCalc(board[i].baseRent, 25);
+                board[i].rent += percentageCalc(board[i].rent, 25);
+                board[i].houseValue += percentageCalc(board[i].houseValue, 10);
+                board[i].hotelValue += percentageCalc(board[i].hotelValue, 10);
+                board[i].currentValue += percentageCalc(board[i].currentValue, 20);
+            }
+        }
+    }
+
+    // Select Market Decline
+    int declineGroup = -1;
+    for (int attempts = 0; attempts < 100; attempts++)
+    {
+        int r = rand() % 8; // Groups 0 to 7
+        if (gameState->marketDeclineCooldown[r] == 0 && r != boomGroup)
+        {
+            declineGroup = r;
+            break;
+        }
+    }
+
+    if (declineGroup != -1)
+    {
+        gameState->activeMarketDecline = declineGroup;
+        gameState->marketDeclineRounds = 10;
+        gameState->marketDeclineCooldown[declineGroup] = 30;
+
+        printf("Market Decline begins for Property Group %d! (10 rounds)\n", declineGroup);
+        for (int i = 0; i < BOARD_SIZE; i++)
+        {
+            if (board[i].type == PROPERTY && board[i].group == declineGroup)
+            {
+                board[i].currentValue -= percentageCalc(board[i].currentValue, 15);
+                board[i].baseRent -= percentageCalc(board[i].baseRent, 20);
+                board[i].rent -= percentageCalc(board[i].rent, 20);
+                board[i].mortgageValue -= percentageCalc(board[i].mortgageValue, 10);
+            }
+        }
+    }
+}
+
+void updateActiveMarketConditions(GameState *gameState, BoardSquare board[])
+{
+    // Update cooldowns
+    for (int i = 0; i < 9; i++)
+    {
+        if (gameState->marketBoomCooldown[i] > 0)
+            gameState->marketBoomCooldown[i]--;
+        if (gameState->marketDeclineCooldown[i] > 0)
+            gameState->marketDeclineCooldown[i]--;
+    }
+
+    // Update Boom
+    if (gameState->activeMarketBoom != NO_PROPERTY_GROUP)
+    {
+        gameState->marketBoomRounds--;
+        if (gameState->marketBoomRounds <= 0)
+        {
+            printf("\nMarket Boom for Property Group %d has ended.\n", gameState->activeMarketBoom);
+
+            for (int i = 0; i < BOARD_SIZE; i++)
+            {
+                if (board[i].type == PROPERTY && board[i].group == gameState->activeMarketBoom)
+                {
+                    board[i].price = reversePercentageAdd(board[i].price, 15);
+                    board[i].mortgageValue = reversePercentageAdd(board[i].mortgageValue, 15);
+                    board[i].baseRent = reversePercentageAdd(board[i].baseRent, 25);
+                    board[i].rent = reversePercentageAdd(board[i].rent, 25);
+                    board[i].houseValue = reversePercentageAdd(board[i].houseValue, 10);
+                    board[i].hotelValue = reversePercentageAdd(board[i].hotelValue, 10);
+                    board[i].currentValue = reversePercentageAdd(board[i].currentValue, 20);
+                }
+            }
+            gameState->activeMarketBoom = NO_PROPERTY_GROUP;
+        }
+    }
+
+    // Update Decline
+    if (gameState->activeMarketDecline != NO_PROPERTY_GROUP)
+    {
+        gameState->marketDeclineRounds--;
+        if (gameState->marketDeclineRounds <= 0)
+        {
+            printf("\nMarket Decline for Property Group %d has ended.\n", gameState->activeMarketDecline);
+
+            for (int i = 0; i < BOARD_SIZE; i++)
+            {
+                if (board[i].type == PROPERTY && board[i].group == gameState->activeMarketDecline)
+                {
+                    board[i].currentValue = reversePercentageSub(board[i].currentValue, 15);
+                    board[i].baseRent = reversePercentageSub(board[i].baseRent, 20);
+                    board[i].rent = reversePercentageSub(board[i].rent, 20);
+                    board[i].mortgageValue = reversePercentageSub(board[i].mortgageValue, 10);
+                }
+            }
+            gameState->activeMarketDecline = NO_PROPERTY_GROUP;
+        }
+    }
+}
+
+void applyGovernmentRegulations(GameState *gameState, Player players[], BoardSquare board[])
+{
+    printf("\n--- Government Regulation Review ---\n");
+    int r = rand() % 8;
+    gameState->activeRegulation = (GovernmentRegulation)r;
+    gameState->regulationRoundsRemaining = 20;
+
+    switch (gameState->activeRegulation)
+    {
+    case INCREASE_PROPERTY_TAX:
+        printf("Government Regulation: Increase Property Tax. Income Tax increases by 50%%.\n");
+        gameState->incomeTaxRate += percentageCalc(gameState->incomeTaxRate, 50);
+        break;
+
+    case REDUCE_LOAN_INTEREST:
+        printf("Government Regulation: Reduce Loan Interest. Interest decreases by 2%%.\n");
+        gameState->loanInterestRate -= 2;
+        if (gameState->loanInterestRate < 0)
+            gameState->loanInterestRate = 0;
+        break;
+
+    case HOUSING_SUBSIDY_REGULATION:
+        printf("Government Regulation: Housing Subsidy. House construction costs reduced by 30%%.\n");
+        break;
+
+    case LUXURY_PROPERTY_TAX:
+        printf("Government Regulation: Luxury Property Tax. Hotels incur a 25%% tax immediately.\n");
+        for (int p = 0; p < NO_PLAYERS; p++)
+        {
+            if (players[p].bankrupt)
+                continue;
+            for (int i = 0; i < BOARD_SIZE; i++)
+            {
+                if (board[i].owner == players[p].order && board[i].buildings >= 5)
+                {
+                    int tax = percentageCalc(board[i].currentValue, 25);
+                    printf("%s pays Luxury Tax of LKR %d for Hotel on %s.\n", players[p].name, tax, board[i].name);
+                    payDebt(&players[p], tax, -1, board, players, gameState);
+                }
+            }
+        }
+        break;
+
+    case RAILWAY_MODERNIZATION:
+        printf("Government Regulation: Railway Modernization. Railway rents increase 25%%.\n");
+        for (int i = 0; i < BOARD_SIZE; i++)
+        {
+            if (board[i].type == RAILWAY)
+            {
+                board[i].baseRent += percentageCalc(board[i].baseRent, 25);
+                board[i].rent += percentageCalc(board[i].rent, 25);
+            }
+        }
+        break;
+
+    case ELECTRICITY_TARIFF_REVISION:
+        printf("Government Regulation: Electricity Tariff Revision. Utility rents increase 20%%.\n");
+        for (int i = 0; i < BOARD_SIZE; i++)
+        {
+            if (board[i].type == UTILITY)
+            {
+                board[i].baseRent += percentageCalc(board[i].baseRent, 20);
+                board[i].rent += percentageCalc(board[i].rent, 20);
+            }
+        }
+        break;
+
+    case INSURANCE_REGULATION:
+        printf("Government Regulation: Insurance Regulation. Insurance premiums decrease 15%%.\n");
+        gameState->insuranceModifier -= 15;
+        if (gameState->insuranceModifier < 0)
+            gameState->insuranceModifier = 0;
+        break;
+
+    case ANTI_SPECULATION_ACT:
+        printf("Government Regulation: Anti-Speculation Act. Players blocked from buying properties if they own > 3 undeveloped properties.\n");
+        break;
+
+    default:
+        break;
+    }
 }

@@ -27,6 +27,15 @@ void gameStateInit(GameState *gameState)
     gameState->marketBoomRounds = 0;
     gameState->activeMarketDecline = NO_PROPERTY_GROUP;
     gameState->marketDeclineRounds = 0;
+
+    for (int i = 0; i < 9; i++)
+    {
+        gameState->marketBoomCooldown[i] = 0; // to prevent happenig againg in 30
+        gameState->marketDeclineCooldown[i] = 0;
+    }
+
+    gameState->activeRegulation = NO_REGULATION;
+    gameState->regulationRoundsRemaining = 0;
 }
 
 int percentageCalc(int amount, int rate)
@@ -34,17 +43,36 @@ int percentageCalc(int amount, int rate)
     return (amount * rate + 50) / 100; // add 50 to round up
 }
 
+int reversePercentageAdd(int currentAmount, int rate)
+{
+    int original = (currentAmount * 100) / (100 + rate);
+    while (original + percentageCalc(original, rate) < currentAmount)
+        original++;
+    while (original + percentageCalc(original, rate) > currentAmount)
+        original--;
+    return original;
+}
+
+int reversePercentageSub(int currentAmount, int rate)
+{
+    int original = (currentAmount * 100) / (100 - rate);
+    while (original - percentageCalc(original, rate) < currentAmount)
+        original++;
+    while (original - percentageCalc(original, rate) > currentAmount)
+        original--;
+    return original;
+}
+
 void gameInit(GameState *gameState, BoardSquare board[], Player players[])
 {
     boardInit(board);
     gameStateInit(gameState);
     playerInit(players);
+    eventDeckInit(&gameState->eventDeck);
 }
 
 void runGame(GameState *gameState, BoardSquare board[])
 {
-    // all initializations
-
     Player players[NO_PLAYERS];
     gameInit(gameState, board, players);
 
@@ -52,15 +80,19 @@ void runGame(GameState *gameState, BoardSquare board[])
     {
         printf("#####################################\n");
         printf("Round %d\n", gameState->currentRound + 1);
+        printf("#####################################\n");
         int solventPlayers = 0;
 
         for (int playerIndex = 0; playerIndex < NO_PLAYERS; playerIndex++)
         {
-            if (players[playerIndex].bankrupt) continue;
+            if (players[playerIndex].bankrupt)
+                continue;
 
             solventPlayers++;
 
             performMaintenance(players, playerIndex, board);
+            repairDamagedProperties(players, playerIndex, board);
+
             if (players[playerIndex].jailed)
             {
                 if (payJailBail(players[playerIndex], gameState->currentRound) == 1)
@@ -88,7 +120,7 @@ void runGame(GameState *gameState, BoardSquare board[])
                     {
                         players[playerIndex].jailTurns++;
                         printf("%s did not roll doubles (%d, %d). Remains in Jail for %d turn(s).\n", players[playerIndex].name, diceRoll.dice1, diceRoll.dice2, 4 - players[playerIndex].jailTurns);
-                        if (players[playerIndex].jailTurns > 3)
+                        if (players[playerIndex].jailTurns >= 3)
                         {
                             printf("%s has been in Jail for 3 turns. player is released from Jail.\n", players[playerIndex].name);
                             players[playerIndex].jailed = 0;
@@ -103,50 +135,89 @@ void runGame(GameState *gameState, BoardSquare board[])
                 movePlayer(players, playerIndex, board, gameState, rollDice());
                 constructBuildings(players, playerIndex, board, gameState);
             }
+
+            printf("\n");
         }
-        updateLoans(players, board);
+        updateLoans(players, board, gameState);
         updateInsurance(players, board);
         applyActiveEvents(players, board, gameState);
         updatePropertyDepreciation(board);
         updateBuildingDepreciation(board);
         applyRegionalEvents(gameState, board);
+        updateActiveMarketConditions(gameState, board);
+
+        // Update active regulation duration
+        if (gameState->regulationRoundsRemaining > 0)
+        {
+            gameState->regulationRoundsRemaining--;
+            if (gameState->regulationRoundsRemaining == 0)
+            {
+                printf("Government Regulation %d has expired.\n", gameState->activeRegulation);
+                gameState->activeRegulation = NO_REGULATION;
+            }
+        }
+
         gameState->currentRound++;
 
         int finalSolventCount = 0;
-        int winnerIndex = -1;
         for (int p = 0; p < NO_PLAYERS; p++)
         {
             if (!players[p].bankrupt)
             {
                 finalSolventCount++;
-                winnerIndex = p;
             }
         }
 
         if (finalSolventCount <= 1)
         {
-            printf("\n=============================================\n");
-            printf("GAME OVER! %s wins by being the last solvent player!\n", winnerIndex != -1 ? players[winnerIndex].name : "Nobody");
-            printf("=============================================\n");
             break;
         }
 
         if (gameState->currentRound % 10 == 0)
         {
             applyInflation(gameState, board);
+            applyDynamicPropertyMarket(gameState, board);
+            randomDisaster(players, board);
         }
-        
+
+        if (gameState->currentRound % 20 == 0)
+        {
+            applyGovernmentRegulations(gameState, players, board);
+        }
+
         displayMarketConditions(gameState);
-        printf("=============================================\n");
         printf("Round %d Summary\n", gameState->currentRound);
-        printf("=============================================\n");
+        printf("=========================================\n");
         for (int playerIndex = 0; playerIndex < NO_PLAYERS; playerIndex++)
         {
-            if (players[playerIndex].bankrupt) continue;
+            if (!players[playerIndex].bankrupt && getPlayerNetWorth(&players[playerIndex], board) < 0)
+            {
+                declareBankruptcy(&players[playerIndex], -1, board, players, gameState);
+            }
+        }
+        for (int playerIndex = 0; playerIndex < NO_PLAYERS; playerIndex++)
+        {
+            if (players[playerIndex].bankrupt)
+                continue;
 
             printf("%s\n", players[playerIndex].name);
             printf("Cash : LKR %d\n", players[playerIndex].cash);
             printf("Net Worth : LKR %d\n", getPlayerNetWorth(&players[playerIndex], board));
+
+            players[playerIndex].noProperties = 0;
+            players[playerIndex].noHotels = 0;
+            for (int i = 0; i < BOARD_SIZE; i++)
+            {
+                if (board[i].owner == players[playerIndex].order)
+                {
+                    players[playerIndex].noProperties++;
+                    if (board[i].buildings >= 5)
+                    {
+                        players[playerIndex].noHotels++;
+                    }
+                }
+            }
+
             printf("Properties : %d\n", players[playerIndex].noProperties);
             printf("Hotels : %d\n", players[playerIndex].noHotels);
             printf("Outstanding Loan : LKR %d\n", players[playerIndex].loanAmount);
@@ -154,10 +225,6 @@ void runGame(GameState *gameState, BoardSquare board[])
         }
     }
 
-    // End of MAX_ROUNDS game termination logic
-    printf("\n=============================================\n");
-    printf("GAME OVER! Maximum rounds reached.\n");
-    
     int highestNetWorth = -9999999;
     int winnerIndex = -1;
 
@@ -166,7 +233,6 @@ void runGame(GameState *gameState, BoardSquare board[])
         if (!players[p].bankrupt)
         {
             int netWorth = getPlayerNetWorth(&players[p], board);
-            printf("%s's Final Net Worth: LKR %d\n", players[p].name, netWorth);
             if (netWorth > highestNetWorth)
             {
                 highestNetWorth = netWorth;
@@ -175,13 +241,39 @@ void runGame(GameState *gameState, BoardSquare board[])
         }
     }
 
+    printf("\n=========================================\n");
+    printf("End of Game\n");
+    printf("=========================================\n");
+    printf("GAME OVER\n\n");
+
     if (winnerIndex != -1)
     {
-        printf("\n=> WINNER: %s with a Net Worth of LKR %d! <=\n", players[winnerIndex].name, highestNetWorth);
+        int netWorth = highestNetWorth;
+        int cash = players[winnerIndex].cash;
+        int loans = players[winnerIndex].loanAmount;
+        int propertyValue = netWorth - cash + loans;
+
+        printf("Winner\n");
+        printf("%s\n\n", players[winnerIndex].name);
+
+        printf("Total Cash\n");
+        printf("LKR %d\n\n", cash);
+
+        printf("Total Property Value\n");
+        printf("LKR %d\n\n", propertyValue);
+
+        printf("Outstanding Loans\n");
+        if (loans > 0)
+        {
+            printf("LKR %d\n\n", loans);
+        }
+        else
+        {
+            printf("None\n\n");
+        }
+
+        printf("Net Worth\n");
+        printf("LKR %d\n", netWorth);
     }
-    else
-    {
-        printf("\n=> NO WINNER: Everyone is bankrupt! <=\n");
-    }
-    printf("=============================================\n");
+    printf("=========================================\n");
 }

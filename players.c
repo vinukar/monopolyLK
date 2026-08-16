@@ -97,10 +97,30 @@ void playerInit(Player players[])
     printf("\n\n");
 }
 
+int countUndevelopedProperties(Player *player, BoardSquare board[])
+{
+    int count = 0;
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (board[i].owner == player->order && board[i].type == PROPERTY && board[i].buildings == 0)
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
 void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState)
 {
     Player *player = &players[currentPlayerIndex];
     BoardSquare *currentProperty = &board[squareIndex];
+
+    if (gameState->activeRegulation == ANTI_SPECULATION_ACT && countUndevelopedProperties(player, board) > 3)
+    {
+        printf("Anti-Speculation Act: %s cannot buy properties because they own >3 undeveloped properties.\n", player->name);
+        startAuction(players, currentProperty, gameState, board); // Wait, startAuction signature! I should just call it and return.
+        return;
+    }
 
     switch (player->strategy)
     {
@@ -115,7 +135,7 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
         }
         else
         {
-            startAuction(players, currentProperty);
+            startAuction(players, currentProperty, gameState, board);
         }
         break;
 
@@ -130,7 +150,7 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
         }
         else
         {
-            startAuction(players, currentProperty);
+            startAuction(players, currentProperty, gameState, board);
         }
         break;
 
@@ -145,7 +165,7 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
         }
         else
         {
-            startAuction(players, currentProperty);
+            startAuction(players, currentProperty, gameState, board);
         }
         break;
 
@@ -165,12 +185,12 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
                 }
                 else
                 {
-                    startAuction(players, currentProperty);
+                    startAuction(players, currentProperty, gameState, board);
                 }
             }
             else
             {
-                startAuction(players, currentProperty);
+                startAuction(players, currentProperty, gameState, board);
             }
             break;
         }
@@ -198,12 +218,19 @@ void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[]
             }
         }
     }
-}
 
+    if (currentProperty->owner == currentPlayerIndex)
+    {
+        if (currentProperty->type == RAILWAY)
+            railwayRent(board, players[currentPlayerIndex]);
+        if (currentProperty->type == UTILITY)
+            utilityRent(board, players[currentPlayerIndex]);
+    }
+}
 int futureRent()
 {
-    // TODO : Add the logic
-    return 0;
+    // Simplified: Provide a flat safety buffer of LKR 1500 to estimate upcoming rent costs.
+    return 1500;
 }
 
 int payJailBail(Player player, int currentRound)
@@ -245,7 +272,7 @@ int payJailBail(Player player, int currentRound)
     return 0;
 }
 
-void startAuction(Player players[], BoardSquare *asset)
+void startAuction(Player players[], BoardSquare *asset, GameState *gameState, BoardSquare board[])
 {
     if (asset->loanLocked)
     {
@@ -253,81 +280,80 @@ void startAuction(Player players[], BoardSquare *asset)
         return;
     }
     int highestbid = (asset->currentValue / 2);
+
+    // Apply Market Decline auction discount
+    if (gameState->activeMarketDecline == asset->group)
+    {
+        highestbid -= percentageCalc(highestbid, 25);
+    }
+
     printf("Auction Started.\n");
-    printf("Property : %s\n", asset->name);
-    printf("Starting Bid : %d\n", highestbid);
+    printf("Property :\n%s\n", asset->name);
+    printf("Opening Bid :\nLKR %d.\n", highestbid);
 
     int active[NO_PLAYERS] = {0, 0, 0, 0};
     int highestbidder = -1;
     int activeCount = 0;
     int bidLimint[NO_PLAYERS] = {0, 0, 0, 0};
+
     for (int i = 0; i < NO_PLAYERS; i++)
     {
-        if (players[i].bankrupt)
+        if (!players[i].bankrupt)
         {
-            continue;
-        }
-        active[i] = 1;
-        activeCount++;
-        bidLimint[i] = auctionBidLimit(&players[i], asset->currentValue);
-        if (bidLimint[i] < highestbid)
-        {
-            active[i] = 0;
-            activeCount--;
-            printf("%s withdraws.\n", players[i].name);
+            active[i] = 1;
+            activeCount++;
+            bidLimint[i] = auctionBidLimit(&players[i], asset->currentValue);
         }
     }
 
-    if (activeCount == 0)
-    {
-        printf("No player bids. %s remains with the Bank.\n", asset->name);
-        return;
-    }
+    int currentBid = highestbid;
 
-    while (highestbidder == -1 || activeCount > 1)
+    while ((highestbidder == -1 && activeCount > 0) || activeCount > 1)
     {
-
         for (int i = 0; i < NO_PLAYERS; i++)
         {
             if (active[i] == 0)
-            {
                 continue;
-            }
-
-            if (i == highestbidder) // doesn't bid againt himself
-            {
+            if (i == highestbidder)
                 continue;
-            }
 
-            if (highestbidder != -1)
-            {
-                highestbid += AUCTION_INCREMENT;
-            }
+            int proposedBid = currentBid + AUCTION_INCREMENT;
 
-            if (highestbid <= bidLimint[i])
+            if (proposedBid <= bidLimint[i])
             {
                 highestbidder = i;
-                printf("%s bids LKR %d.\n", players[i].name, highestbid);
+                currentBid = proposedBid;
+                printf("%s bids LKR %d.\n", players[i].name, currentBid);
             }
             else
             {
                 active[i] = 0;
                 activeCount--;
-
                 printf("%s withdraws.\n", players[i].name);
             }
 
-            if (activeCount == 1 && highestbidder != -1)
+            if ((activeCount == 1 && highestbidder != -1) || activeCount == 0)
             {
                 break;
             }
         }
     }
-    asset->owner = highestbidder;
-    players[highestbidder].cash -= (highestbid - AUCTION_INCREMENT);
-    printf("%s wins the auction.\n", players[highestbidder].name);
-    printf("%s purchased %s for LKR : %d\n", players[highestbidder].name, asset->name, highestbid - AUCTION_INCREMENT);
-    printf("Remaining Balance : LKR %d\n", players[highestbidder].cash);
+
+    if (highestbidder != -1)
+    {
+        asset->owner = highestbidder;
+        players[highestbidder].cash -= currentBid;
+        printf("%s wins the auction.\n", players[highestbidder].name);
+
+        if (asset->type == RAILWAY)
+            railwayRent(board, players[highestbidder]);
+        if (asset->type == UTILITY)
+            utilityRent(board, players[highestbidder]);
+    }
+    else
+    {
+        printf("No player bids. %s remains with the Bank.\n", asset->name);
+    }
 }
 
 int auctionBidLimit(Player *player, int marketValue)
@@ -436,7 +462,7 @@ void constructBuildings(Player players[], int playerIndex, BoardSquare board[], 
                 cost = board[propertyIndex].hotelValue;
             }
 
-            if (player->activeEvent == HOUSING_SUBSIDY)
+            if (player->activeEvent == HOUSING_SUBSIDY || gameState->activeRegulation == HOUSING_SUBSIDY_REGULATION)
             {
                 cost = cost - percentageCalc(cost, 30);
             }
@@ -474,7 +500,11 @@ void constructBuildings(Player players[], int playerIndex, BoardSquare board[], 
                 }
                 break;
             case OPPORTUNISTIC_TRADER:
-                // TODO : in inflation no builings
+                if (gameState->currentInflationRate > 0)
+                {
+                    keepBuilding = 0;
+                    continue;
+                }
                 break;
             }
 
@@ -612,25 +642,21 @@ void performMaintenance(Player players[], int playerIndex, BoardSquare board[])
             switch (player->strategy)
             {
             case AGGRESSIVE_INVESTOR:
-                // Wants to maximize rent, so maintains if condition drops below 90% (to keep 100% rent)
                 if (board[i].buildingCondition < 90)
                     shouldMaintain = 1;
                 break;
 
             case RISK_TAKER:
-                // "Ignores property depreciation until repair becomes unavoidable" -> Waits for structural damage
                 if (board[i].buildingStructuralDamage)
                     shouldMaintain = 1;
                 break;
 
             case CONSERVATIVE_BANKER:
-                // Prioritizes stability and minimizes risks, maintains as soon as condition drops below 100%
                 if (board[i].buildingCondition < 100)
                     shouldMaintain = 1;
                 break;
 
             case OPPORTUNISTIC_TRADER:
-                // Adapts dynamically, balances cost vs return, maintains when rent drops significantly (<75%)
                 if (board[i].buildingCondition < 75)
                     shouldMaintain = 1;
                 break;
@@ -662,6 +688,57 @@ void performMaintenance(Player players[], int playerIndex, BoardSquare board[])
 
                     printf("%s performed maintenance on %s buildings for LKR : %d.\n", player->name, board[i].name, cost);
                 }
+            }
+        }
+    }
+}
+
+void repairDamagedProperties(Player players[], int playerIndex, BoardSquare board[])
+{
+    Player *player = &players[playerIndex];
+
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (board[i].owner == player->order && board[i].damaged == 1 && board[i].pendingRepairCost > 0)
+        {
+            int cost = board[i].pendingRepairCost;
+            int shouldRepair = 0;
+
+            switch (player->strategy)
+            {
+            case AGGRESSIVE_INVESTOR:
+                // Wants to maximize rent, repairs immediately if cash is available
+                if (player->cash >= cost)
+                    shouldRepair = 1;
+                break;
+
+            case CONSERVATIVE_BANKER:
+                // Maintains emergency cash reserve, repairs if at least 50% of cash remains
+                if (player->cash >= cost * 2)
+                    shouldRepair = 1;
+                break;
+
+            case RISK_TAKER:
+                // Ignores until unavoidable. Rent is 0, so it is unavoidable.
+                if (player->cash >= cost)
+                    shouldRepair = 1;
+                break;
+
+            case OPPORTUNISTIC_TRADER:
+                // Evaluates expected return. Rent is fully restored, making it a priority.
+                if (player->cash >= cost)
+                    shouldRepair = 1;
+                break;
+            }
+
+            if (shouldRepair)
+            {
+                player->cash -= cost;
+                board[i].damaged = 0;
+                board[i].pendingRepairCost = 0;
+                board[i].buildingCondition = 100;
+
+                printf("%s automatically repaired disaster damage on %s for LKR %d.\n", player->name, board[i].name, cost);
             }
         }
     }

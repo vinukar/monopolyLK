@@ -3,20 +3,17 @@
 
 #include <stdbool.h>
 
-
-#define NO_PLAYERS       4
-#define BOARD_SIZE       40
-#define MAX_PLAYERS      4
-#define MAX_ROUNDS       500
-#define START_CASH       30000
-#define GO_REWARD        2000
-#define JAIL_BAIL        300
-#define EVENT_DECK_SIZE  20
+#define NO_PLAYERS 4
+#define BOARD_SIZE 40
+#define MAX_PLAYERS 4
+#define MAX_ROUNDS 500
+#define START_CASH 30000
+#define GO_REWARD 2000
+#define JAIL_BAIL 300
+#define EVENT_DECK_SIZE 20
 #define AUCTION_INCREMENT 250
-#define RAILWAY_PRICE    5000
-#define UTILITY_PRICE    3000
-
-
+#define RAILWAY_PRICE 5000
+#define UTILITY_PRICE 3000
 
 typedef enum
 {
@@ -59,8 +56,8 @@ typedef enum
     FIRE,
     FLOOD,
     RIOT,
-    VANDALISM,           /* insurance */
-    EARTHQUAKE,          /* insurance */
+    VANDALISM,  /* insurance */
+    EARTHQUAKE, /* insurance */
     BUILDING_COLLAPSE,
     ELECTRICAL_FAILURE
 } DisasterType;
@@ -97,8 +94,6 @@ typedef enum
     GOVERNMENT_GRANT,
     NATIONAL_DISASTER
 } NationalEvent;
-
-
 
 typedef struct
 {
@@ -138,7 +133,8 @@ typedef struct
     int total;
 } Dice;
 
-typedef enum {
+typedef enum
+{
     SOUTHERN_TOURISM_BOOM,
     PORT_CITY_EXPANSION,
     IT_INDUSTRY_GROWTH,
@@ -154,6 +150,19 @@ typedef enum {
     NO_REGIONAL_EVENT = -1
 } RegionalEvent;
 
+typedef enum
+{
+    INCREASE_PROPERTY_TAX,
+    REDUCE_LOAN_INTEREST,
+    HOUSING_SUBSIDY_REGULATION,
+    LUXURY_PROPERTY_TAX,
+    RAILWAY_MODERNIZATION,
+    ELECTRICITY_TARIFF_REVISION,
+    INSURANCE_REGULATION,
+    ANTI_SPECULATION_ACT,
+    NO_REGULATION = -1
+} GovernmentRegulation;
+
 typedef struct
 {
     int currentRound;
@@ -162,17 +171,23 @@ typedef struct
     int loanInterestRate;
     int insuranceModifier;
     EventDeck eventDeck;
-    
+
     RegionalEvent activeRegionalEvent;
     int regionalEventRoundsRemaining;
-    
+
     int currentInflationRate;
-    
+
     PropertyGroup activeMarketBoom;
     int marketBoomRounds;
-    
+
     PropertyGroup activeMarketDecline;
     int marketDeclineRounds;
+
+    int marketBoomCooldown[9]; // Cooldown trackers per PropertyGroup
+    int marketDeclineCooldown[9];
+
+    GovernmentRegulation activeRegulation;
+    int regulationRoundsRemaining;
 } GameState;
 
 typedef struct
@@ -204,30 +219,32 @@ typedef struct
     int pendingRepairCost;
     int age;
     int depreciationPercentage;
-    
+
     int buildingCondition;
     int buildingUnmaintainedRounds;
     int buildingStructuralDamage;
 } BoardSquare;
 
-
-
 /* game.c */
 Dice rollDice();
 void gameInit(GameState *gameState, BoardSquare board[], Player players[]);
 void gameStateInit(GameState *gameState);
-int  percentageCalc(int amount, int rate);
+int percentageCalc(int amount, int rate);
+int reversePercentageAdd(int amount, int rate);
+int reversePercentageSub(int amount, int rate);
 void runGame(GameState *gameState, BoardSquare board[]);
 
 /* players.c */
 void playerInit(Player players[]);
 void buyProperties(Player players[], int currentPlayerIndex, BoardSquare board[], int squareIndex, GameState *gameState);
-int  payJailBail(Player player, int currentRound);
-int  futureRent();
-void startAuction(Player players[], BoardSquare *asset);
-int  auctionBidLimit(Player *player, int marketValue);
+int payJailBail(Player player, int currentRound);
+int futureRent(); // not ully implemented
+void startAuction(Player players[], BoardSquare *asset, GameState *gameState, BoardSquare board[]);
+int auctionBidLimit(Player *player, int marketValue);
 void constructBuildings(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
 InsuranceType selectInsurance(Player *player, BoardSquare *property);
+void repairBuildings(Player players[], int playerIndex, BoardSquare board[]);
+void repairDamagedProperties(Player players[], int playerIndex, BoardSquare board[]);
 void performMaintenance(Player players[], int playerIndex, BoardSquare board[]);
 int renovateProperty(Player *player, BoardSquare *property);
 int getPlayerNetWorth(Player *player, BoardSquare board[]);
@@ -236,27 +253,32 @@ int getPlayerNetWorth(Player *player, BoardSquare board[]);
 void boardInit(BoardSquare board[]);
 void movePlayer(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState, Dice d);
 void resolveLanding(Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState, Dice d);
-int railwayRent(BoardSquare board[], Player player);
-int  playerAssetCalc(BoardSquare board[], int playerIndex);
+void railwayRent(BoardSquare board[], Player player);
+void utilityRent(BoardSquare board[], Player player);
+int playerAssetCalc(BoardSquare board[], int playerIndex);
 void updateRent(BoardSquare *board);
 
 /* finance.c */
 void bankAction(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
-void updateLoans(Player players[], BoardSquare board[]);
+void updateLoans(Player players[], BoardSquare board[], GameState *gameState);
 void insuranceAction(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
 void InsuranceClaim(Player players[], BoardSquare *property, DisasterType disaster, int repairCost);
 void updateInsurance(Player players[], BoardSquare board[]);
 void updatePropertyDepreciation(BoardSquare board[]);
 void updateBuildingDepreciation(BoardSquare board[]);
 int payDebt(Player *debtor, int amount, int creditorIndex, BoardSquare board[], Player players[], GameState *gameState);
+void declareBankruptcy(Player *debtor, int creditorIndex, BoardSquare board[], Player players[], GameState *gameState);
 
 /* events.c */
 void randomDisaster(Player players[], BoardSquare board[]);
-void initEventDeck(EventDeck *deck);
+void eventDeckInit(EventDeck *deck);
 void drawEventCard(EventDeck *deck, Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState);
 void applyActiveEvents(Player players[], BoardSquare board[], GameState *gameState);
 void applyInflation(GameState *gameState, BoardSquare board[]);
 void applyRegionalEvents(GameState *gameState, BoardSquare board[]);
 void displayMarketConditions(GameState *gameState);
+void applyDynamicPropertyMarket(GameState *gameState, BoardSquare board[]);
+void updateActiveMarketConditions(GameState *gameState, BoardSquare board[]);
+void applyGovernmentRegulations(GameState *gameState, Player players[], BoardSquare board[]);
 
 #endif /* TYPES_H */
