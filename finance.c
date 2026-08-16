@@ -481,6 +481,152 @@ void InsuranceClaim(Player players[], BoardSquare *property, DisasterType disast
         property->damaged = 1;
         property->pendingRepairCost = repairCost;
 
-        //TODO: Add a way to pay the repair cost
+        // TODO: Add a way to pay the repair cost
     }
+}
+
+void updatePropertyDepreciation(BoardSquare board[])
+{
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (board[i].type == PROPERTY)
+        {
+            board[i].age++;
+
+            if (board[i].age > 50)
+            {
+                if (board[i].depreciationPercentage < 30)
+                {
+                    board[i].depreciationPercentage++;
+                }else
+                {
+                    printf("%s has depriciated to 30%%. Renovate the property\n" , board[i].name);
+                }
+                board[i].currentValue -= percentageCalc(board[i].currentValue, 1);
+                board[i].rent -= percentageCalc(board[i].rent, 1);
+                printf("Property %s aged %d rounds. Depreciated by %d%%. Current Value: %d\n", board[i].name, board[i].age, board[i].depreciationPercentage , board[i].currentValue);
+            }
+        }
+    }
+}
+
+void updateBuildingDepreciation(BoardSquare board[])
+{
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (board[i].type == PROPERTY && board[i].buildings > 0)
+        {
+            board[i].buildingCondition -= 2;
+            if (board[i].buildingCondition < 0)
+            {
+                board[i].buildingCondition = 0;
+            }
+            
+            board[i].buildingUnmaintainedRounds++;
+            
+            if (board[i].buildingUnmaintainedRounds > 20 && board[i].buildingStructuralDamage == 0)
+            {
+                board[i].buildingStructuralDamage = 1;
+                
+                int valDecrease = percentageCalc(board[i].currentValue, 15);
+                board[i].currentValue -= valDecrease;
+                
+                int maxRentDecrease = percentageCalc(board[i].rent, 25);
+                board[i].rent -= maxRentDecrease;
+                board[i].baseRent -= percentageCalc(board[i].baseRent, 25);
+                
+                printf("Structural damage on %s buildings! Value decreased by 15%%, rent decreased by 25%%.\n", board[i].name);
+            }
+        }
+    }
+}
+
+int payDebt(Player *debtor, int amount, int creditorIndex, BoardSquare board[], Player players[], GameState *gameState)
+{
+    if (debtor->cash >= amount)
+    {
+        debtor->cash -= amount;
+        if (creditorIndex != -1)
+            players[creditorIndex].cash += amount;
+        return 1;
+    }
+
+    printf("%s has insufficient funds. Attempting debt recovery...\n", debtor->name);
+
+    // Step 1: Sell Buildings (at 50% construction cost)
+    for (int i = 0; i < BOARD_SIZE && debtor->cash < amount; i++)
+    {
+        if (board[i].owner == debtor->order && board[i].buildings > 0)
+        {
+            int sellValue = 0;
+            if (board[i].buildings < 5)
+            {
+                sellValue = (board[i].houseValue / 2) * board[i].buildings;
+            }
+            else
+            {
+                sellValue = board[i].hotelValue / 2;
+            }
+            printf("%s sells buildings on %s for LKR %d.\n", debtor->name, board[i].name, sellValue);
+            debtor->cash += sellValue;
+            board[i].buildings = 0;
+            board[i].buildingCondition = 0;
+            updateRent(&board[i]);
+        }
+    }
+
+    // Step 2: Mortgage Properties
+    for (int i = 0; i < BOARD_SIZE && debtor->cash < amount; i++)
+    {
+        if (board[i].owner == debtor->order && board[i].buildings == 0 && board[i].mortgageState == 0 && board[i].loanLocked == 0)
+        {
+            board[i].mortgageState = 1;
+            debtor->cash += board[i].mortgageValue;
+            printf("%s mortgages %s for LKR %d.\n", debtor->name, board[i].name, board[i].mortgageValue);
+        }
+    }
+
+    if (debtor->cash >= amount)
+    {
+        debtor->cash -= amount;
+        if (creditorIndex != -1)
+            players[creditorIndex].cash += amount;
+        printf("%s successfully recovered debt.\n", debtor->name);
+        return 1;
+    }
+
+    // Step 3: Bankruptcy
+    printf("%s goes BANKRUPT!\n", debtor->name);
+    debtor->bankrupt = 1;
+
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (board[i].owner == debtor->order)
+        {
+            board[i].buildings = 0;
+            board[i].mortgageState = 0;
+            board[i].loanLocked = 0;
+            board[i].insuranceType = NO_INSURANCE;
+            
+            if (creditorIndex != -1)
+            {
+                board[i].owner = creditorIndex;
+                printf("%s is transferred to %s.\n", board[i].name, players[creditorIndex].name);
+            }
+            else
+            {
+                board[i].owner = -1;
+                printf("%s is returned to the Bank and auctioned.\n", board[i].name);
+                startAuction(players, &board[i]);
+            }
+        }
+    }
+
+    if (creditorIndex != -1)
+    {
+        players[creditorIndex].cash += debtor->cash;
+    }
+    debtor->cash = 0;
+    
+    return 0;
 }

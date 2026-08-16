@@ -138,6 +138,22 @@ typedef struct
     int total;
 } Dice;
 
+typedef enum {
+    SOUTHERN_TOURISM_BOOM,
+    PORT_CITY_EXPANSION,
+    IT_INDUSTRY_GROWTH,
+    NORTHERN_DEVELOPMENT_PROGRAMME,
+    TEA_EXPORT_BOOM,
+    AIRPORT_EXPANSION,
+    UNIVERSITY_CITY_GROWTH,
+    BEACH_POLLUTION,
+    FLOOD_DAMAGE_REGIONAL,
+    TRANSPORT_STRIKE_REGIONAL,
+    ELECTRICITY_TARIFF_INCREASE,
+    WATER_SHORTAGE,
+    NO_REGIONAL_EVENT = -1
+} RegionalEvent;
+
 typedef struct
 {
     int currentRound;
@@ -146,6 +162,17 @@ typedef struct
     int loanInterestRate;
     int insuranceModifier;
     EventDeck eventDeck;
+    
+    RegionalEvent activeRegionalEvent;
+    int regionalEventRoundsRemaining;
+    
+    int currentInflationRate;
+    
+    PropertyGroup activeMarketBoom;
+    int marketBoomRounds;
+    
+    PropertyGroup activeMarketDecline;
+    int marketDeclineRounds;
 } GameState;
 
 typedef struct
@@ -175,6 +202,12 @@ typedef struct
 
     int damaged;
     int pendingRepairCost;
+    int age;
+    int depreciationPercentage;
+    
+    int buildingCondition;
+    int buildingUnmaintainedRounds;
+    int buildingStructuralDamage;
 } BoardSquare;
 
 
@@ -195,6 +228,9 @@ void startAuction(Player players[], BoardSquare *asset);
 int  auctionBidLimit(Player *player, int marketValue);
 void constructBuildings(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
 InsuranceType selectInsurance(Player *player, BoardSquare *property);
+void performMaintenance(Player players[], int playerIndex, BoardSquare board[]);
+int renovateProperty(Player *player, BoardSquare *property);
+int getPlayerNetWorth(Player *player, BoardSquare board[]);
 
 /* board.c */
 void boardInit(BoardSquare board[]);
@@ -210,6 +246,9 @@ void updateLoans(Player players[], BoardSquare board[]);
 void insuranceAction(Player players[], int playerIndex, BoardSquare board[], GameState *gameState);
 void InsuranceClaim(Player players[], BoardSquare *property, DisasterType disaster, int repairCost);
 void updateInsurance(Player players[], BoardSquare board[]);
+void updatePropertyDepreciation(BoardSquare board[]);
+void updateBuildingDepreciation(BoardSquare board[]);
+int payDebt(Player *debtor, int amount, int creditorIndex, BoardSquare board[], Player players[], GameState *gameState);
 
 /* events.c */
 void randomDisaster(Player players[], BoardSquare board[]);
@@ -217,5 +256,7 @@ void initEventDeck(EventDeck *deck);
 void drawEventCard(EventDeck *deck, Player players[], int currentPlayerIndex, BoardSquare board[], GameState *gameState);
 void applyActiveEvents(Player players[], BoardSquare board[], GameState *gameState);
 void applyInflation(GameState *gameState, BoardSquare board[]);
+void applyRegionalEvents(GameState *gameState, BoardSquare board[]);
+void displayMarketConditions(GameState *gameState);
 
 #endif /* TYPES_H */

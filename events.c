@@ -524,7 +524,8 @@ void applyInflation(GameState *gameState, BoardSquare board[])
 {
     int inflationRates[] = {-3, 0, 2, 5, 8, 12};
     int rate = inflationRates[rand() % 6];
-    
+    gameState->currentInflationRate = rate;
+
     printf("\nInflation modifies\n");
     if (rate == 0)
     {
@@ -532,9 +533,12 @@ void applyInflation(GameState *gameState, BoardSquare board[])
         return;
     }
 
-    if (rate < 0) {
+    if (rate < 0)
+    {
         printf("Deflation occurred! Rate: %d%%\n", rate);
-    } else {
+    }
+    else
+    {
         printf("Inflation occurred! Rate: +%d%%\n", rate);
     }
 
@@ -544,14 +548,250 @@ void applyInflation(GameState *gameState, BoardSquare board[])
         {
             board[i].price += percentageCalc(board[i].price, rate);
             board[i].currentValue += percentageCalc(board[i].currentValue, rate);
-            board[i].houseValue = percentageCalc(board[i].houseValue, rate);
-            board[i].hotelValue = percentageCalc(board[i].hotelValue, rate);
-            board[i].baseRent = percentageCalc(board[i].baseRent, rate);
-            board[i].rent = percentageCalc(board[i].rent, rate);
-            board[i].mortgageValue = percentageCalc(board[i].mortgageValue, rate);
+            board[i].houseValue += percentageCalc(board[i].houseValue, rate);
+            board[i].hotelValue += percentageCalc(board[i].hotelValue, rate);
+            board[i].baseRent += percentageCalc(board[i].baseRent, rate);
+            board[i].rent += percentageCalc(board[i].rent, rate);
+            board[i].mortgageValue += percentageCalc(board[i].mortgageValue, rate);
         }
     }
-    
+
     gameState->loanInterestRate += rate;
-    //TODO add repair cost , insurance cost
+    // TODO add repair cost , insurance cost
+}
+
+void applyRegionalEvents(GameState *gameState, BoardSquare board[])
+{
+    if (gameState->activeRegionalEvent != NO_REGIONAL_EVENT && gameState->regionalEventRoundsRemaining == 0)
+    {
+        switch (gameState->activeRegionalEvent)
+        {
+        case SOUTHERN_TOURISM_BOOM:
+            board[26].rent -= percentageCalc(board[26].rent, 40);
+            board[27].rent -= percentageCalc(board[27].rent, 40);
+            board[29].rent -= percentageCalc(board[29].rent, 40);
+            break;
+        case PORT_CITY_EXPANSION:
+            board[1].currentValue -= percentageCalc(board[1].currentValue, 25);
+            board[3].currentValue -= percentageCalc(board[3].currentValue, 25);
+            board[5].currentValue -= percentageCalc(board[5].currentValue, 25);
+            break;
+        case IT_INDUSTRY_GROWTH:
+            board[13].currentValue -= percentageCalc(board[13].currentValue, 20);
+            board[11].currentValue -= percentageCalc(board[11].currentValue, 20);
+            board[14].currentValue -= percentageCalc(board[14].currentValue, 20);
+            break;
+        case NORTHERN_DEVELOPMENT_PROGRAMME:
+            board[31].currentValue -= percentageCalc(board[31].currentValue, 30);
+            board[32].currentValue -= percentageCalc(board[32].currentValue, 30);
+            board[34].currentValue -= percentageCalc(board[34].currentValue, 30);
+            break;
+        case TEA_EXPORT_BOOM:
+            board[37].currentValue -= percentageCalc(board[37].currentValue, 35);
+            break;
+        case AIRPORT_EXPANSION:
+            board[16].rent -= percentageCalc(board[16].rent, 30);
+            board[18].rent -= percentageCalc(board[18].rent, 30);
+            board[19].rent -= percentageCalc(board[19].rent, 30);
+            break;
+        case UNIVERSITY_CITY_GROWTH:
+            board[23].currentValue -= percentageCalc(board[23].currentValue, 20);
+            board[21].currentValue -= percentageCalc(board[21].currentValue, 20);
+            break;
+        case BEACH_POLLUTION:
+            board[26].rent += percentageCalc(board[26].rent, 30);
+            board[27].rent += percentageCalc(board[27].rent, 30);
+            board[29].rent += percentageCalc(board[29].rent, 30);
+            break;
+        case FLOOD_DAMAGE_REGIONAL:
+            board[26].currentValue += percentageCalc(board[26].currentValue, 20);
+            board[27].currentValue += percentageCalc(board[27].currentValue, 20);
+            board[29].currentValue += percentageCalc(board[29].currentValue, 20);
+            board[16].currentValue += percentageCalc(board[16].currentValue, 20);
+            board[18].currentValue += percentageCalc(board[18].currentValue, 20);
+            board[19].currentValue += percentageCalc(board[19].currentValue, 20);
+            break;
+        case TRANSPORT_STRIKE_REGIONAL:
+            board[5].rent += percentageCalc(board[5].rent, 40);
+            board[15].rent += percentageCalc(board[15].rent, 40);
+            board[25].rent += percentageCalc(board[25].rent, 40);
+            board[35].rent += percentageCalc(board[35].rent, 40);
+            break;
+        case ELECTRICITY_TARIFF_INCREASE:
+            board[12].rent -= percentageCalc(board[12].rent, 25);
+            board[28].rent -= percentageCalc(board[28].rent, 25);
+            break;
+        case WATER_SHORTAGE:
+            board[28].rent -= percentageCalc(board[28].rent, 20);
+            board[27].currentValue += percentageCalc(board[27].currentValue, 10);
+            board[29].currentValue += percentageCalc(board[29].currentValue, 10);
+            break;
+        default:
+            break;
+        }
+        gameState->activeRegionalEvent = NO_REGIONAL_EVENT;
+        printf("\nRegional Development Event Expired\n");
+    }
+
+    if (gameState->regionalEventRoundsRemaining > 0)
+    {
+        gameState->regionalEventRoundsRemaining--;
+    }
+
+    if (gameState->currentRound > 0 && gameState->currentRound % 15 == 0)
+    {
+        int r = rand() % 12;
+        gameState->activeRegionalEvent = r;
+        gameState->regionalEventRoundsRemaining = 15;
+
+        printf("\n--- New Regional Development Card Drawn ---\n");
+
+        switch (r)
+        {
+        case SOUTHERN_TOURISM_BOOM:
+            printf("Southern Tourism Boom: Galle Fort, Unawatuna, Hikkaduwa rent +40%%\n");
+            board[26].rent += percentageCalc(board[26].rent, 40);
+            board[27].rent += percentageCalc(board[27].rent, 40);
+            board[29].rent += percentageCalc(board[29].rent, 40);
+            break;
+        case PORT_CITY_EXPANSION:
+            printf("Port City Expansion: Pettah, Maradana, Colombo Fort Station values +25%%\n");
+            board[1].currentValue += percentageCalc(board[1].currentValue, 25);
+            board[3].currentValue += percentageCalc(board[3].currentValue, 25);
+            board[5].currentValue += percentageCalc(board[5].currentValue, 25);
+            break;
+        case IT_INDUSTRY_GROWTH:
+            printf("IT Industry Growth: Maharagama, Nugegoda, Kottawa values +20%%\n");
+            board[13].currentValue += percentageCalc(board[13].currentValue, 20);
+            board[11].currentValue += percentageCalc(board[11].currentValue, 20);
+            board[14].currentValue += percentageCalc(board[14].currentValue, 20);
+            break;
+        case NORTHERN_DEVELOPMENT_PROGRAMME:
+            printf("Northern Development Programme: Jaffna Town, Nallur, Trincomalee values +30%%\n");
+            board[31].currentValue += percentageCalc(board[31].currentValue, 30);
+            board[32].currentValue += percentageCalc(board[32].currentValue, 30);
+            board[34].currentValue += percentageCalc(board[34].currentValue, 30);
+            break;
+        case TEA_EXPORT_BOOM:
+            printf("Tea Export Boom: Nuwara Eliya value +35%%\n");
+            board[37].currentValue += percentageCalc(board[37].currentValue, 35);
+            break;
+        case AIRPORT_EXPANSION:
+            printf("Airport Expansion: Negombo, Katunayake, Ja-Ela rents +30%%\n");
+            board[16].rent += percentageCalc(board[16].rent, 30);
+            board[18].rent += percentageCalc(board[18].rent, 30);
+            board[19].rent += percentageCalc(board[19].rent, 30);
+            break;
+        case UNIVERSITY_CITY_GROWTH:
+            printf("University City Growth: Peradeniya and Kandy City values +20%%\n");
+            board[23].currentValue += percentageCalc(board[23].currentValue, 20);
+            board[21].currentValue += percentageCalc(board[21].currentValue, 20);
+            break;
+        case BEACH_POLLUTION:
+            printf("Beach Pollution: Southern coastal rents -30%%\n");
+            board[26].rent -= percentageCalc(board[26].rent, 30);
+            board[27].rent -= percentageCalc(board[27].rent, 30);
+            board[29].rent -= percentageCalc(board[29].rent, 30);
+            break;
+        case FLOOD_DAMAGE_REGIONAL:
+            printf("Flood Damage: Low-lying coastal properties lose 20%% value\n");
+            board[26].currentValue -= percentageCalc(board[26].currentValue, 20);
+            board[27].currentValue -= percentageCalc(board[27].currentValue, 20);
+            board[29].currentValue -= percentageCalc(board[29].currentValue, 20);
+            board[16].currentValue -= percentageCalc(board[16].currentValue, 20);
+            board[18].currentValue -= percentageCalc(board[18].currentValue, 20);
+            board[19].currentValue -= percentageCalc(board[19].currentValue, 20);
+            break;
+        case TRANSPORT_STRIKE_REGIONAL:
+            printf("Transport Strike: Railway revenue reduced by 40%%\n");
+            board[5].rent -= percentageCalc(board[5].rent, 40);
+            board[15].rent -= percentageCalc(board[15].rent, 40);
+            board[25].rent -= percentageCalc(board[25].rent, 40);
+            board[35].rent -= percentageCalc(board[35].rent, 40);
+            break;
+        case ELECTRICITY_TARIFF_INCREASE:
+            printf("Electricity Tariff Increase: Utility rent +25%%\n");
+            board[12].rent += percentageCalc(board[12].rent, 25);
+            board[28].rent += percentageCalc(board[28].rent, 25);
+            break;
+        case WATER_SHORTAGE:
+            printf("Water Shortage: Water utility revenue +20%%; surrounding properties -10%%\n");
+            board[28].rent += percentageCalc(board[28].rent, 20);
+            board[27].currentValue -= percentageCalc(board[27].currentValue, 10);
+            board[29].currentValue -= percentageCalc(board[29].currentValue, 10);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void displayMarketConditions(GameState *gameState)
+{
+    printf("\n=========================================\n");
+    printf("Current Market Conditions\n");
+    printf("=========================================\n");
+
+    if (gameState->activeMarketBoom != NO_PROPERTY_GROUP)
+    {
+        printf("Market Boom\n");
+        printf("-------------\n");
+        printf("Property Group %d (+20%%)\n", gameState->activeMarketBoom);
+        printf("Rounds Remaining : %d\n\n", gameState->marketBoomRounds);
+    }
+    
+    if (gameState->activeMarketDecline != NO_PROPERTY_GROUP)
+    {
+        printf("Market Decline\n");
+        printf("----------------\n");
+        printf("Property Group %d (-15%%)\n", gameState->activeMarketDecline);
+        printf("Rounds Remaining : %d\n\n", gameState->marketDeclineRounds);
+    }
+
+    if (gameState->activeRegionalEvent != NO_REGIONAL_EVENT)
+    {
+        printf("Regional Development\n");
+        printf("-----------------------\n");
+        
+        switch (gameState->activeRegionalEvent)
+        {
+        case SOUTHERN_TOURISM_BOOM:
+            printf("Southern Tourism Boom\n(+40%%)\n"); break;
+        case PORT_CITY_EXPANSION:
+            printf("Port City Expansion\n(+25%%)\n"); break;
+        case IT_INDUSTRY_GROWTH:
+            printf("IT Industry Growth\n(+20%%)\n"); break;
+        case NORTHERN_DEVELOPMENT_PROGRAMME:
+            printf("Northern Development Programme\n(+30%%)\n"); break;
+        case TEA_EXPORT_BOOM:
+            printf("Tea Export Boom\n(+35%%)\n"); break;
+        case AIRPORT_EXPANSION:
+            printf("Airport Expansion\n(+30%%)\n"); break;
+        case UNIVERSITY_CITY_GROWTH:
+            printf("University City Growth\n(+20%%)\n"); break;
+        case BEACH_POLLUTION:
+            printf("Beach Pollution\n(-30%%)\n"); break;
+        case FLOOD_DAMAGE_REGIONAL:
+            printf("Flood Damage\n(-20%%)\n"); break;
+        case TRANSPORT_STRIKE_REGIONAL:
+            printf("Transport Strike\n(-40%%)\n"); break;
+        case ELECTRICITY_TARIFF_INCREASE:
+            printf("Electricity Tariff Increase\n(+25%%)\n"); break;
+        case WATER_SHORTAGE:
+            printf("Water Shortage\n(+20%%)\n"); break;
+        default:
+            printf("Unknown Regional Event\n"); break;
+        }
+
+        printf("Rounds Remaining : %d\n\n", gameState->regionalEventRoundsRemaining);
+    }
+
+    printf("Inflation\n");
+    printf("------------\n");
+    printf("%s%d%%\n\n", gameState->currentInflationRate > 0 ? "+" : "", gameState->currentInflationRate);
+
+    printf("Current Loan Interest\n");
+    printf("-----------------------\n");
+    printf("%d%%\n", gameState->loanInterestRate);
+    printf("=========================================\n");
 }

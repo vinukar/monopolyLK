@@ -481,6 +481,10 @@ void constructBuildings(Player players[], int playerIndex, BoardSquare board[], 
             player->cash -= cost;
             board[propertyIndex].buildings++;
 
+            board[propertyIndex].buildingCondition = 100;
+            board[propertyIndex].buildingUnmaintainedRounds = 0;
+            board[propertyIndex].buildingStructuralDamage = 0;
+
             updateRent(&board[propertyIndex]);
 
             if (board[propertyIndex].buildings == 5)
@@ -556,4 +560,133 @@ InsuranceType selectInsurance(Player *player, BoardSquare *property)
     }
 
     return insuranceType;
+}
+
+int renovateProperty(Player *player, BoardSquare *property)
+{
+    int renovationCost = percentageCalc(property->currentValue, 10);
+    if (player->cash < renovationCost)
+    {
+        return 0;
+    }
+    int renovate = 0;
+    switch (player->strategy)
+    {
+    case AGGRESSIVE_INVESTOR:
+        renovate = 1;
+        break;
+
+    case CONSERVATIVE_BANKER:
+        if (property->depreciationPercentage > 10)
+        {
+            renovate = 1;
+        }
+        break;
+
+    case RISK_TAKER:
+        if (property->depreciationPercentage > 30)
+        {
+            renovate = 1;
+        }
+        break;
+
+    case OPPORTUNISTIC_TRADER:
+        if (property->depreciationPercentage > 15)
+        {
+            renovate = 1;
+        }
+        break;
+    }
+
+    return renovate;
+}
+
+void performMaintenance(Player players[], int playerIndex, BoardSquare board[])
+{
+    Player *player = &players[playerIndex];
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (board[i].owner == playerIndex && board[i].buildings > 0)
+        {
+            int shouldMaintain = 0;
+            switch (player->strategy)
+            {
+            case AGGRESSIVE_INVESTOR:
+                // Wants to maximize rent, so maintains if condition drops below 90% (to keep 100% rent)
+                if (board[i].buildingCondition < 90)
+                    shouldMaintain = 1;
+                break;
+
+            case RISK_TAKER:
+                // "Ignores property depreciation until repair becomes unavoidable" -> Waits for structural damage
+                if (board[i].buildingStructuralDamage)
+                    shouldMaintain = 1;
+                break;
+
+            case CONSERVATIVE_BANKER:
+                // Prioritizes stability and minimizes risks, maintains as soon as condition drops below 100%
+                if (board[i].buildingCondition < 100)
+                    shouldMaintain = 1;
+                break;
+
+            case OPPORTUNISTIC_TRADER:
+                // Adapts dynamically, balances cost vs return, maintains when rent drops significantly (<75%)
+                if (board[i].buildingCondition < 75)
+                    shouldMaintain = 1;
+                break;
+            }
+
+            if (shouldMaintain)
+            {
+                int cost = 0;
+                if (board[i].buildings < 5)
+                    cost = percentageCalc(board[i].houseValue, 5) * board[i].buildings;
+                else
+                    cost = percentageCalc(board[i].hotelValue, 8);
+
+                if (board[i].buildingStructuralDamage)
+                {
+                    cost += percentageCalc(cost, 50);
+                }
+
+                if (player->cash >= cost)
+                {
+                    player->cash -= cost;
+                    board[i].buildingCondition = 100;
+                    board[i].buildingUnmaintainedRounds = 0;
+
+                    if (board[i].buildingStructuralDamage)
+                    {
+                        board[i].buildingStructuralDamage = 0;
+                    }
+
+                    printf("%s performed maintenance on %s buildings for LKR : %d.\n", player->name, board[i].name, cost);
+                }
+            }
+        }
+    }
+}
+
+int getPlayerNetWorth(Player *player, BoardSquare board[])
+{
+    int netWorth = player->cash - player->loanAmount;
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (board[i].owner == player->order)
+        {
+            netWorth += board[i].currentValue;
+            if (board[i].buildings > 0)
+            {
+                if (board[i].buildings < 5)
+                {
+                    netWorth += board[i].houseValue * board[i].buildings;
+                }
+                else
+                {
+                    netWorth += board[i].hotelValue;
+                }
+            }
+        }
+    }
+    return netWorth;
 }
